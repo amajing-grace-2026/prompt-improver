@@ -60,6 +60,7 @@ window.PI_PLATFORMS = (() => {
     action: rx(
       "\\w+ing", "walks?", "runs?", "jumps?", "dances?", "sits?", "stands?", "looks?", "turns?", "opens?", "closes?",
       "holds?", "drinks?", "eats?", "drives?", "flies?", "swims?", "fights?", "laughs?", "cries?", "smiles?", "talks?",
+      "me[nmgy]\\w{3,}", "ber\\w{3,}",
       "sedang", "berjalan", "berlari", "melompat", "menari", "duduk", "berdiri", "menatap", "melihat", "membuka",
       "memegang", "minum", "makan", "mengemudi", "terbang", "berenang", "tertawa", "menangis", "tersenyum", "bicara",
       "berbicara", "bermain", "bekerja", "memasak", "menulis", "membaca"
