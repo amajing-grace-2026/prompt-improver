@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Improver — Super Prompt untuk Veo, Flow, Vids, Imagen & AI Studio</title>
+  <meta name="description" content="Ubah prompt biasa menjadi super prompt yang presisi untuk Google Flow (Veo 3), Google Vids, Imagen / Nano Banana, Gemini di AI Studio, dan model multimodal. Tanya 3-10 pertanyaan cerdas, lalu hasilkan prompt yang jauh lebih baik." />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236d5dfc'/%3E%3Cpath d='M18 40l10-20 10 20M22 33h12M44 20v20' stroke='%23fff' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">✦</span>
+      <div>
+        <h1>Prompt Improver</h1>
+        <p>Prompt biasa → super prompt untuk Veo · Flow · Vids · Imagen · AI Studio</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button id="engineBadge" class="badge badge-btn" title="Klik untuk mengatur engine">⚙ Engine: <b>Lokal</b></button>
+      <button id="btnHistory" class="icon-btn" title="Riwayat">🕘</button>
+      <button id="btnTips" class="icon-btn" title="Panduan platform">💡</button>
+      <button id="btnTheme" class="icon-btn" title="Tema terang/gelap">🌓</button>
+      <a class="icon-btn" id="ghLink" href="https://github.com/" target="_blank" rel="noopener" title="Kode sumber di GitHub">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Stepper -->
+  <nav class="stepper" aria-label="Langkah">
+    <button class="step is-active" data-step="1"><span>1</span> Prompt awal</button>
+    <button class="step" data-step="2"><span>2</span> Pertanyaan</button>
+    <button class="step" data-step="3"><span>3</span> Super prompt</button>
+  </nav>
+
+  <main class="container">
+    <!-- STEP 1 -->
+    <section id="step1" class="panel step-panel">
+      <h2>1. Pilih target & tempel prompt-mu</h2>
+      <p class="muted">Tools ini menganalisis apa yang kurang dari prompt, bertanya 3-10 hal yang paling berpengaruh, lalu menyusun prompt baru yang presisi dan sesuai aturan platform.</p>
+
+      <div id="platformGrid" class="platform-grid" role="radiogroup" aria-label="Platform target"></div>
+
+      <div class="row gap">
+        <label class="field">
+          <span>Mode</span>
+          <select id="modeSelect"></select>
+        </label>
+        <label class="field">
+          <span>Bahasa hasil prompt</span>
+          <select id="langSelect">
+            <option value="en">English (disarankan untuk visual)</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="both">Keduanya (EN + ID)</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Prompt awal <small id="charCount" class="muted">0 kata</small></span>
+        <textarea id="rawPrompt" rows="6" placeholder="Tulis prompt apa adanya, boleh Bahasa Indonesia atau Inggris. Contoh: kucing oranye main di taman"></textarea>
+      </label>
+
+      <div id="exampleChips" class="chips"></div>
+
+      <div class="row gap actions">
+        <button id="btnAnalyze" class="btn primary">Analisis & tanya saya →</button>
+        <button id="btnQuick" class="btn ghost" title="Lewati pertanyaan; AI mengisi kekosongan dengan pilihan terbaik">Langsung buat super prompt</button>
+      </div>
+      <p id="engineNote" class="hint"></p>
+    </section>
+
+    <!-- STEP 2 -->
+    <section id="step2" class="panel step-panel hidden">
+      <h2>2. Jawab yang relevan, lewati yang tidak</h2>
+      <div id="analysisBox" class="analysis"></div>
+      <div id="questions" class="questions"></div>
+      <div class="row gap actions">
+        <button id="btnBack1" class="btn ghost">← Ubah prompt</button>
+        <button id="btnGenerate" class="btn primary">Buat super prompt ✦</button>
+        <button id="btnSkipAll" class="btn ghost">Lewati semua & biarkan AI memutuskan</button>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section id="step3" class="panel step-panel hidden">
+      <h2>3. Super prompt siap dipakai</h2>
+      <div id="resultBox"></div>
+      <div class="refine">
+        <label class="field">
+          <span>Kurang pas? Beri tahu apa yang mau diubah</span>
+          <textarea id="feedback" rows="2" placeholder="cth: buat lebih gelap dan misterius, ganti kameranya jadi handheld, tambahkan dialog pendek"></textarea>
+        </label>
+        <div class="row gap actions">
+          <button id="btnRefine" class="btn primary">Perbaiki lagi ↻</button>
+          <button id="btnBack2" class="btn ghost">← Ubah jawaban</button>
+          <button id="btnNew" class="btn ghost">Mulai baru</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="loading" class="loading hidden" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <p id="loadingText">Menganalisis prompt…</p>
+    </div>
+  </main>
+
+  <!-- Settings modal -->
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="settingsTitle">Engine & API key</h3>
+        <button class="icon-btn" data-close="settingsModal" aria-label="Tutup">✕</button>
+      </div>
+      <p class="muted small">Ada dua engine. <b>Lokal</b> bekerja offline dengan aturan heuristik (tanpa key, kualitas dasar). <b>AI</b> memakai Gemini lewat API key milikmu sendiri: analisis lebih cerdas, pertanyaan disesuaikan konteks, terjemahan otomatis, hasil jauh lebih kreatif.</p>
+      <label class="field">
+        <span>Gemini API key <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">ambil gratis di AI Studio ↗</a></span>
+        <div class="row gap">
+          <input id="apiKey" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+          <button id="btnToggleKey" class="btn ghost" type="button" title="Tampilkan/sembunyikan">👁</button>
+        </div>
+      </label>
+      <div class="row gap">
+        <button id="btnTestKey" class="btn primary">Tes & simpan</button>
+        <button id="btnClearKey" class="btn danger ghost">Hapus key</button>
+      </div>
+      <p id="keyStatus" class="hint"></p>
+      <label class="field">
+        <span>Model</span>
+        <select id="modelSelect"><option value="gemini-2.5-flash">gemini-2.5-flash (default)</option></select>
+      </label>
+      <label class="field">
+        <span>Pilih engine</span>
+        <select id="engineSelect">
+          <option value="auto">Otomatis (AI jika key ada, kalau tidak Lokal)</option>
+          <option value="ai">Selalu AI</option>
+          <option value="local">Selalu Lokal (offline)</option>
+        </select>
+      </label>
+      <p class="muted small">🔒 Privasi: key dan riwayat hanya disimpan di browser ini (localStorage). Permintaan dikirim langsung ke Google; tidak ada server perantara. Jangan pakai di komputer bersama.</p>
+    </div>
+  </div>
+
+  <!-- Tips drawer -->
+  <aside id="tipsDrawer" class="drawer hidden" aria-label="Panduan platform">
+    <div class="drawer-head"><h3 id="tipsTitle">Panduan</h3><button class="icon-btn" data-close="tipsDrawer" aria-label="Tutup">✕</button></div>
+    <div id="tipsBody" class="drawer-body"></div>
+  </aside>
+
+  <!-- History drawer -->
+  <aside id="historyDrawer" class="drawer hidden" aria-label="Riwayat">
+    <div class="drawer-head"><h3>Riwayat</h3><div class="row gap"><button id="btnClearHistory" class="btn ghost small">Hapus semua</button><button class="icon-btn" data-close="historyDrawer" aria-label="Tutup">✕</button></div></div>
+    <div id="historyBody" class="drawer-body"></div>
+  </aside>
+
+  <div id="overlay" class="overlay hidden"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <footer class="footer">
+    <p>Prompt Improver · open source (MIT) · Dibuat untuk Google Flow (Veo), Google Vids, Imagen/Nano Banana, Gemini di AI Studio, dan model multimodal. Bukan produk resmi Google.</p>
+  </footer>
+
+  <script src="js/platforms.js"></script>
+  <script src="js/local-engine.js"></script>
+  <script src="js/ai-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
