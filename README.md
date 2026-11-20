@@ -46,6 +46,16 @@ Engine otomatis memilih AI jika key tersedia, dan jatuh ke Lokal jika gagal.
 - **Gemini / AI Studio**: ROLE → CONTEXT → TASK → RULES → OUTPUT FORMAT → EXAMPLES → QUALITY BAR, aturan anti-halusinasi, izin bertanya, system instruction terpisah.
 - **Omni / Multimodal**: modalitas output di kalimat pertama; blok berlabel; aturan penanganan referensi (apa yang dijaga vs diubah).
 
+## Fitur v2
+
+- **Preset gaya sekali klik** per platform: iklan produk premium, vlog sinematik, film horor, anime lukis tangan, dokumenter alam, UGC TikTok, foto produk e-commerce, potret editorial, poster film, karakter 3D, ingredient karakter Flow, dan lain-lain. Preset hanya mengisi bagian yang tidak kamu jawab; jawabanmu selalu menang.
+- **Gambar referensi**: unggah, seret, atau tempel (Ctrl+V) gambar. Engine AI membacanya untuk Image-to-Video di Flow, edit Nano Banana, dan Omni. Gambar diperkecil ke 1024 px di browser dan tidak disimpan di riwayat.
+- **Sequence multi-klip Veo (1–5 klip)** dengan **character bible**: deskripsi karakter dan dunia yang diulang persis di setiap klip agar konsisten di Flow Scenebuilder.
+- **Uji A/B** (Gemini / AI Studio): jalankan prompt asli dan super prompt berdampingan untuk melihat bedanya.
+- **Tes generate gambar** (Imagen / Nano Banana): coba super prompt langsung dengan model gambar Gemini jika key-mu punya aksesnya.
+- **Link bagikan**: hasil dikompresi ke dalam URL (`#s=...`), tanpa server dan tanpa akun.
+- **Bisa dipasang sebagai aplikasi (PWA)** dan tetap terbuka saat offline dengan engine lokal.
+
 ## Fitur lain
 
 - Skor **sebelum → sesudah**, daftar dimensi yang terdeteksi/kurang.
@@ -76,9 +86,12 @@ Repo → **Settings → Pages → Source: Deploy from a branch → `main` / `(ro
 index.html          UI
 css/styles.css      tema & layout
 js/platforms.js     basis pengetahuan: dimensi, kata kunci, aturan, contoh per platform
+js/presets.js       preset gaya sekali klik per platform
 js/local-engine.js  analisis heuristik + generator template (offline)
 js/ai-engine.js     panggilan Gemini API (analisis + generate + refine)
 js/app.js           state, rendering, riwayat, pengaturan
+sw.js               service worker (network-first, cadangan offline)
+manifest.webmanifest, icon.svg   PWA
 tools/serve.ps1     server statis untuk pratinjau di Windows
 ```
 

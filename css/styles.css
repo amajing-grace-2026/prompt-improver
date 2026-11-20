@@ -243,3 +243,28 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
   .result-top { grid-template-columns: 1fr; }
   .engine-hide-sm { display: none; }
 }
+
+/* ---------- v2: referensi gambar, lab A/B, gambar uji ---------- */
+.ref-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dropzone {
+  flex: 1; min-width: 220px; display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 16px; border: 1.5px dashed var(--line); border-radius: 12px; background: var(--bg-2);
+  color: var(--muted); font-size: 0.85rem; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover, .dropzone:focus, .dropzone.is-over { border-color: var(--accent); background: var(--accent-soft); outline: none; }
+.ref-preview { display: flex; align-items: center; gap: 12px; }
+.ref-preview img { width: 120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.lab {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 16px; padding: 14px; border-radius: 12px; border: 1px solid var(--accent); background: var(--accent-soft);
+}
+.lab p { margin: 2px 0 0; }
+.ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+.ab-text { white-space: pre-wrap; word-break: break-word; font-size: 0.86rem; max-height: 480px; overflow: auto; }
+.ab-win { border-color: var(--ok); }
+.gen-img { margin: 12px 0 0; }
+.gen-img img { max-width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.gen-img figcaption { margin-top: 6px; }
+@media (max-width: 720px) {
+  .ab-grid { grid-template-columns: 1fr; }
+}

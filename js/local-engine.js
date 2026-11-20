@@ -94,6 +94,7 @@ window.PI_LOCAL = (() => {
     res.before = analyze(prompt, platformId).score;
     res.after = analyze(res.prompt, platformId).score;
     res.note = "Dibuat oleh engine lokal (tanpa AI). Untuk terjemahan otomatis ke bahasa Inggris dan hasil yang jauh lebih kreatif, aktifkan engine AI dengan API key Gemini.";
+    if (opts.image) res.note += " Gambar referensi hanya dibaca oleh engine AI; engine lokal mengabaikannya.";
     return res;
   }
 
@@ -126,16 +127,32 @@ window.PI_LOCAL = (() => {
 
       const negative = join([neg, "subtitles, captions, on-screen text, watermark, logo, distorted faces, extra limbs, flickering, morphing, jittery camera"], ", ");
 
-      const shotList = [
-        { n: 1, title: "Establishing", prompt: prompt.replace(/^.*?of/, "Wide establishing shot, slow drone-like push-in, of") },
-        { n: 2, title: "Main action", prompt },
-        { n: 3, title: "Detail / reaction", prompt: prompt.replace(/^.*?of/, "Extreme close-up, static camera, shallow focus, of") },
+      // Sequence: N klip berurutan dengan character bible identik di setiap klip
+      const clips = Math.max(1, Math.min(5, +opts.clips || 1));
+      const characterBible = clips > 1
+        ? `Recurring subject (keep IDENTICAL in every clip): ${subject || raw}. Same wardrobe, colors, proportions and face in every shot.${setting ? " Location: " + setting + "." : ""}`
+        : "";
+      const SHOTS = [
+        ["Establishing", "Wide establishing shot, slow drone-like push-in,", "the subject is introduced in the environment"],
+        ["Main action", camera || "Cinematic medium shot, slow push-in,", action || "the main action begins"],
+        ["Detail / reaction", "Extreme close-up, static camera, shallow focus,", "a telling detail and the subject's reaction"],
+        ["Turn", "Smooth tracking shot following the subject,", "the situation changes or escalates"],
+        ["Closing", "Slow pull-back to a wide shot,", "the moment resolves and the scene settles"],
       ];
+      const order = clips === 1 ? [0, 1, 2] : clips === 2 ? [0, 1] : clips === 3 ? [0, 1, 2] : clips === 4 ? [0, 1, 3, 4] : [0, 1, 2, 3, 4];
+      const shotList = order.map((k, i) => {
+        const [title, shot, beat] = SHOTS[k];
+        const p = clips > 1
+          ? join([shot.replace(/,$/, "") + ":", beat + ".", characterBible, prompt.replace(/^.*?\bof\b[^.]*\./, "").trim(), i > 0 ? "Audio continues naturally from the previous clip." : ""])
+          : prompt.replace(/^.*?\bof\b/, shot.replace(/,$/, "") + " of");
+        return { n: i + 1, title, prompt: p };
+      });
 
       return {
         prompt,
         negative,
-        settings: { aspect, duration: "8s", mode: opts.mode || "Text-to-Video" },
+        settings: { aspect, duration: "8s", mode: opts.mode || "Text-to-Video", clips: clips > 1 ? clips + " klip" : "" },
+        characterBible,
         json: {
           shot: camera || "cinematic medium shot, slow push-in",
           subject: subject || raw,

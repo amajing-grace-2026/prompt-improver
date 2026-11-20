@@ -25,6 +25,9 @@
     answers: {},
     result: null,
     activeTab: "prompt",
+    clips: 1,
+    image: null, // {mime, data, name, preview}
+    preset: null,
   };
 
   // ---------------- ENGINE ----------------
@@ -90,6 +93,9 @@
     $("#langSelect").value = PLATFORMS[id].outputLang;
     state.outputLang = PLATFORMS[id].outputLang;
     renderTips();
+    state.preset = null;
+    renderPresets();
+    $("#clipsField").classList.toggle("hidden", id !== "veo");
   }
   function renderModes() {
     const p = PLATFORMS[state.platform];
@@ -124,9 +130,10 @@
       const engine = activeEngine();
       let a;
       if (engine === "ai") {
-        try { a = await AI.analyze(raw, state.platform, "id"); }
+        try { a = await AI.analyze(raw, state.platform, "id", { image: state.image, preset: currentPreset(), mode: state.mode }); }
         catch (e) { toast("Engine AI gagal: " + e.message + " — memakai engine lokal."); a = LOCAL.analyze(raw, state.platform); }
       } else a = LOCAL.analyze(raw, state.platform);
+      a = dropPresetQuestions(a);
       state.analysis = a;
       renderAnalysis();
       renderQuestions();
@@ -160,6 +167,8 @@
         <div class="chips">
           ${covered.map((c) => `<span class="chip static ok">✓ ${esc(c)}</span>`).join("")}
           ${missing.map((c) => `<span class="chip static miss">✗ ${esc(c)}</span>`).join("")}
+          ${currentPreset() ? `<span class="chip static">🎨 Preset: ${esc(currentPreset().label)}</span>` : ""}
+          ${state.image ? `<span class="chip static">📎 Gambar referensi${a.engine === "ai" ? "" : " (hanya dibaca engine AI)"}</span>` : ""}
         </div>
       </div>`;
   }
@@ -203,14 +212,18 @@
     showLoading(feedback ? "Memperbaiki super prompt sesuai masukanmu…" : "Menyusun super prompt…");
     try {
       const engine = activeEngine();
-      const opts = { mode: state.mode, outputLang: state.outputLang };
+      const opts = { mode: state.mode, outputLang: state.outputLang, clips: state.platform === "veo" ? state.clips : 1, image: state.image, preset: currentPreset()?.label || "" };
+      // Pertanyaan yang tidak disentuh dikirim sebagai "dilewati" agar model memutuskan sendiri
+      const base = { ...state.answers };
+      for (const q of state.analysis?.questions || []) if (!base[q.id]) base[q.id] = { skipped: true };
+      const answers = withPreset(base);
       if (feedback && state.result) { opts.feedback = feedback; opts.previous = state.result.prompt; }
       let r;
       if (engine === "ai") {
-        try { r = await AI.generate(state.raw, state.platform, state.answers, opts); }
-        catch (e) { toast("Engine AI gagal: " + e.message + " — memakai engine lokal."); r = LOCAL.generate(state.raw, state.platform, state.answers, opts); }
+        try { r = await AI.generate(state.raw, state.platform, answers, opts); }
+        catch (e) { toast("Engine AI gagal: " + e.message + " — memakai engine lokal."); r = LOCAL.generate(state.raw, state.platform, answers, opts); }
       } else {
-        r = LOCAL.generate(state.raw, state.platform, state.answers, opts);
+        r = LOCAL.generate(state.raw, state.platform, answers, opts);
         if (feedback) r.note = "Engine lokal tidak bisa menerapkan masukan bebas. Aktifkan engine AI untuk fitur 'perbaiki lagi'.";
       }
       state.result = r;
@@ -242,6 +255,7 @@
     if (r.negative) tabs.push(["negative", "Negative prompt"]);
     if (r.system) tabs.push(["system", "System instruction"]);
     if (r.json) tabs.push(["json", "JSON (terstruktur)"]);
+    if (r.characterBible) tabs.push(["bible", "Character bible"]);
     if (r.shotList?.length) tabs.push(["shots", `Shot list (${r.shotList.length})`]);
     if (r.storyboard?.length) tabs.push(["story", `Storyboard (${r.storyboard.length})`]);
     const settings = Object.entries(r.settings || {}).filter(([, v]) => v);
@@ -251,6 +265,7 @@
       negative: r.negative ? codebox(r.negative) : "",
       system: r.system ? codebox(r.system) : "",
       json: r.json ? codebox(JSON.stringify(r.json, null, 2)) : "",
+      bible: r.characterBible ? `<p class="muted small">Tempel teks ini PERSIS sama di setiap klip agar karakter dan dunia tetap konsisten.</p>${codebox(r.characterBible)}` : "",
       shots: (r.shotList || []).map((s) => `<div class="shot"><b>Shot ${s.n} — ${esc(s.title || "")}</b><pre>${esc(s.prompt)}</pre><div class="row gap" style="margin-top:6px"><button class="btn small copy" data-copy="${esc(s.prompt)}">Salin shot ${s.n}</button></div></div>`).join(""),
       story: (r.storyboard || []).map((s) => `<div class="shot"><b>Adegan ${s.n} — ${esc(s.title || "")}</b>
           <div class="meta">🎙 Narasi: ${esc(s.narration || "-")}</div><div class="meta">🔤 Teks layar: ${esc(s.onScreenText || "-")}</div>
@@ -273,7 +288,9 @@
         ${(PLATFORM_LINKS[state.platform] || []).map(([t, u]) => `<a class="btn ghost" href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join("")}
         <button class="btn ghost" id="btnDownloadTxt">⬇ .txt</button>
         <button class="btn ghost" id="btnDownloadJson">⬇ .json</button>
+        <button class="btn ghost" id="btnShare">🔗 Bagikan</button>
       </div>
+      <div id="labBox"></div>
       ${r.variants?.length ? `<h3 style="margin-top:18px">Variasi</h3>${r.variants.map((v) => `<details class="variant"><summary>${esc(v.label)}</summary>${codebox(v.prompt)}</details>`).join("")}` : ""}
       <div class="result-grid">
         <div class="card"><h4>Apa yang diperbaiki</h4><ul>${(r.changes || []).map((c) => `<li>${esc(c)}</li>`).join("")}</ul></div>
@@ -287,6 +304,8 @@
     }));
     $("#btnDownloadTxt").addEventListener("click", () => download(`super-prompt-${state.platform}.txt`, exportText(r)));
     $("#btnDownloadJson").addEventListener("click", () => download(`super-prompt-${state.platform}.json`, JSON.stringify({ platform: state.platform, raw: state.raw, answers: state.answers, result: r }, null, 2)));
+    $("#btnShare").addEventListener("click", shareResult);
+    renderLab();
   }
 
   function exportText(r) {
@@ -295,6 +314,7 @@
     if (r.negative) t += `\n## NEGATIVE PROMPT\n${r.negative}\n`;
     if (r.system) t += `\n## SYSTEM INSTRUCTION\n${r.system}\n`;
     if (r.settings) t += `\n## SETTINGS\n${Object.entries(r.settings).map(([k, v]) => `${k}: ${v}`).join("\n")}\n`;
+    if (r.characterBible) t += `\n## CHARACTER BIBLE\n${r.characterBible}\n`;
     if (r.shotList?.length) t += `\n## SHOT LIST\n${r.shotList.map((s) => `Shot ${s.n} — ${s.title}\n${s.prompt}`).join("\n\n")}\n`;
     if (r.storyboard?.length) t += `\n## STORYBOARD\n${r.storyboard.map((s) => `Adegan ${s.n} — ${s.title}\nNarasi: ${s.narration}\nTeks layar: ${s.onScreenText}\nVisual: ${s.visual}`).join("\n\n")}\n`;
     if (r.variants?.length) t += `\n## VARIASI\n${r.variants.map((v) => `[${v.label}]\n${v.prompt}`).join("\n\n")}\n`;
@@ -306,7 +326,7 @@
   function loadHistory() { try { return JSON.parse(localStorage.getItem("pi_history") || "[]"); } catch { return []; } }
   function saveHistory() {
     const h = loadHistory();
-    h.unshift({ t: Date.now(), platform: state.platform, raw: state.raw, answers: state.answers, analysis: state.analysis, result: state.result, mode: state.mode, outputLang: state.outputLang });
+    h.unshift({ t: Date.now(), platform: state.platform, raw: state.raw, answers: state.answers, analysis: state.analysis, result: state.result, mode: state.mode, outputLang: state.outputLang, clips: state.clips, preset: state.preset, hadImage: !!state.image });
     localStorage.setItem("pi_history", JSON.stringify(h.slice(0, 40)));
   }
   function renderHistory() {
@@ -319,6 +339,7 @@
       if (!it) return;
       Object.assign(state, { platform: it.platform, raw: it.raw, answers: it.answers || {}, analysis: it.analysis, result: it.result, mode: it.mode || "", outputLang: it.outputLang || "en", activeTab: "prompt" });
       selectPlatform(it.platform);
+      state.preset = it.preset || null; state.clips = it.clips || 1; $("#clipsSelect").value = state.clips; renderPresets();
       $("#rawPrompt").value = it.raw; updateCount();
       if (it.analysis) { renderAnalysis(); renderQuestions(); }
       if (it.result) { renderResult(); goStep(3); } else goStep(1);
@@ -425,10 +446,172 @@
   $("#btnGenerate").addEventListener("click", () => generate());
   $("#btnSkipAll").addEventListener("click", () => { for (const q of state.analysis.questions) state.answers[q.id] = { skipped: true }; generate(); });
   $("#btnBack1").addEventListener("click", () => goStep(1));
-  $("#btnBack2").addEventListener("click", () => goStep(2));
+  $("#btnBack2").addEventListener("click", () => goStep(state.analysis ? 2 : 1));
   $("#btnRefine").addEventListener("click", () => { const f = $("#feedback").value.trim(); if (!f) return toast("Tulis dulu apa yang ingin diubah."); generate(f); });
   $("#btnNew").addEventListener("click", () => { state.analysis = null; state.result = null; state.answers = {}; $("#rawPrompt").value = ""; updateCount(); goStep(1); });
   $("#rawPrompt").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") analyze(); });
+
+  // ---------------- PRESETS ----------------
+  const PRESETS = window.PI_PRESETS || {};
+  function currentPreset() { return (PRESETS[state.platform] || []).find((p) => p.id === state.preset) || null; }
+  function renderPresets() {
+    const list = PRESETS[state.platform] || [];
+    $("#presetChips").innerHTML = list.length
+      ? list.map((p) => `<button class="chip ${p.id === state.preset ? "is-selected" : ""}" data-preset="${esc(p.id)}" title="${esc(Object.values(p.fields).join(" · "))}">${esc(p.label)}</button>`).join("")
+      : `<span class="muted small">Belum ada preset untuk platform ini.</span>`;
+    $$("#presetChips .chip").forEach((c) => c.addEventListener("click", () => {
+      state.preset = state.preset === c.dataset.preset ? null : c.dataset.preset;
+      renderPresets();
+    }));
+  }
+  // Preset mengisi dimensi yang tidak dijawab; jawaban pengguna selalu menang
+  function withPreset(answers) {
+    const p = currentPreset();
+    if (!p) return answers;
+    const out = { ...answers };
+    for (const [id, val] of Object.entries(p.fields)) {
+      const a = out[id];
+      if (!(a && !a.skipped && (a.option || a.text))) out[id] = { option: val, preset: true };
+    }
+    return out;
+  }
+  // Engine lokal: jangan tanyakan dimensi yang sudah diisi preset (tetap minimal 3 pertanyaan)
+  function dropPresetQuestions(a) {
+    const p = currentPreset();
+    if (!p || a.engine !== "local") return a;
+    const keep = a.questions.filter((q) => !(q.id in p.fields));
+    const rest = a.questions.filter((q) => q.id in p.fields);
+    const qs = keep.concat(rest.slice(0, Math.max(0, 3 - keep.length)));
+    return { ...a, questions: qs.map((q, i) => ({ ...q, n: i + 1 })) };
+  }
+
+  // ---------------- GAMBAR REFERENSI ----------------
+  async function loadImage(file) {
+    if (!file || !/^image\//.test(file.type)) return toast("File harus berupa gambar.");
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      const k = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      const dataUrl = c.toDataURL("image/jpeg", 0.85);
+      state.image = { mime: "image/jpeg", data: dataUrl.split(",")[1], name: file.name, preview: dataUrl };
+      renderImage();
+      if (activeEngine() !== "ai") toast("Gambar tersimpan. Pasang API key agar engine AI bisa membacanya.");
+    } catch { toast("Gambar tidak bisa dibaca."); }
+    finally { URL.revokeObjectURL(url); }
+  }
+  function renderImage() {
+    const has = !!state.image;
+    $("#refPreview").classList.toggle("hidden", !has);
+    $("#dropzone").classList.toggle("hidden", has);
+    if (has) $("#refImg").src = state.image.preview;
+  }
+  $("#refInput").addEventListener("change", (e) => loadImage(e.target.files[0]));
+  $("#dropzone").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#refInput").click(); } });
+  ["dragover", "dragenter"].forEach((ev) => $("#dropzone").addEventListener(ev, (e) => { e.preventDefault(); $("#dropzone").classList.add("is-over"); }));
+  ["dragleave", "drop"].forEach((ev) => $("#dropzone").addEventListener(ev, () => $("#dropzone").classList.remove("is-over")));
+  $("#dropzone").addEventListener("drop", (e) => { e.preventDefault(); loadImage(e.dataTransfer.files[0]); });
+  $("#btnRefRemove").addEventListener("click", () => { state.image = null; $("#refInput").value = ""; renderImage(); });
+  document.addEventListener("paste", (e) => {
+    if ($("#step1").classList.contains("hidden")) return;
+    const f = [...(e.clipboardData?.files || [])].find((x) => /^image\//.test(x.type));
+    if (f) { e.preventDefault(); loadImage(f); }
+  });
+  $("#clipsSelect").addEventListener("change", (e) => (state.clips = +e.target.value));
+
+  // ---------------- LAB: uji A/B & tes gambar ----------------
+  function renderLab() {
+    const box = $("#labBox");
+    if (!box) return;
+    const hasKey = !!AI.getKey();
+    let html = "";
+    if (state.platform === "gemini") html = `<div class="lab"><div><b>🧪 Uji A/B</b><p class="muted small">Jalankan prompt asli dan super prompt di Gemini, lalu bandingkan jawabannya berdampingan.</p></div><button class="btn" id="btnAB" ${hasKey ? "" : "disabled"}>Jalankan uji A/B</button></div>`;
+    if (state.platform === "image") html = `<div class="lab"><div><b>🖼️ Tes generate gambar</b><p class="muted small">Coba super prompt langsung dengan model gambar Gemini (Nano Banana). Butuh key yang punya akses model gambar.</p></div><button class="btn" id="btnImgTest" ${hasKey ? "" : "disabled"}>Generate gambar</button></div>`;
+    if (html && !hasKey) html += `<p class="hint">Fitur ini butuh API key Gemini. <a href="#" class="js-open-settings">Pasang key</a>.</p>`;
+    box.innerHTML = html ? html + `<div id="labOut"></div>` : "";
+    box.querySelector(".js-open-settings")?.addEventListener("click", (e) => { e.preventDefault(); openModal("settingsModal"); });
+    $("#btnAB")?.addEventListener("click", runAB);
+    $("#btnImgTest")?.addEventListener("click", runImageTest);
+  }
+  async function runAB() {
+    const r = state.result;
+    $("#labOut").innerHTML = `<div class="ab-grid"><div class="card"><h4>Prompt asli</h4><div class="ab-text" id="abA">⏳ Menjalankan…</div></div><div class="card ab-win"><h4>Super prompt ✦</h4><div class="ab-text" id="abB">⏳ Menjalankan…</div></div></div>`;
+    $("#btnAB").disabled = true;
+    const show = (sel, p) => p.then((t) => ($(sel).textContent = t)).catch((e) => ($(sel).textContent = "✗ " + e.message));
+    await Promise.all([show("#abA", AI.run(state.raw, "", state.image)), show("#abB", AI.run(r.prompt, r.system || "", state.image))]);
+    $("#btnAB").disabled = false;
+  }
+  async function runImageTest() {
+    const r = state.result;
+    $("#labOut").innerHTML = `<p class="muted">⏳ Membuat gambar…</p>`;
+    $("#btnImgTest").disabled = true;
+    try {
+      const res = await AI.generateImage(r.negative ? `${r.prompt}\n\nAvoid: ${r.negative}.` : r.prompt, state.image);
+      $("#labOut").innerHTML = `<figure class="gen-img"><img src="${res.src}" alt="Hasil uji super prompt" /><figcaption class="muted small">Model: ${esc(res.model)} · <a href="${res.src}" download="super-prompt-test.png">unduh</a></figcaption></figure>`;
+    } catch (e) {
+      $("#labOut").innerHTML = `<p class="note">✗ ${esc(e.message)} Kamu tetap bisa menyalin prompt ke AI Studio atau Gemini.</p>`;
+    } finally { $("#btnImgTest").disabled = false; }
+  }
+
+  // ---------------- LINK BAGIKAN ----------------
+  function bytesToB64(bytes) {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function b64ToBytes(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    return Uint8Array.from(atob(s + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  }
+  async function pipeBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+  async function encodeShare(obj) {
+    const raw = new TextEncoder().encode(JSON.stringify(obj));
+    if (window.CompressionStream) return "z" + bytesToB64(await pipeBytes(raw, new CompressionStream("deflate-raw")));
+    return "j" + bytesToB64(raw);
+  }
+  async function decodeShare(s) {
+    const bytes = b64ToBytes(s.slice(1));
+    const out = s[0] === "z" ? await pipeBytes(bytes, new DecompressionStream("deflate-raw")) : bytes;
+    return JSON.parse(new TextDecoder().decode(out));
+  }
+  async function shareResult() {
+    const r = state.result;
+    const keep = ["prompt", "negative", "system", "json", "characterBible", "shotList", "storyboard", "variants", "settings", "changes", "tips", "before", "after", "engine"];
+    const payload = { v: 1, p: state.platform, raw: state.raw, r: Object.fromEntries(keep.filter((k) => r[k] != null && r[k] !== "").map((k) => [k, r[k]])) };
+    const url = `${location.origin}${location.pathname}#s=${await encodeShare(payload)}`;
+    try { await navigator.clipboard.writeText(url); toast("Link tersalin ✓ — prompt tersimpan di dalam link"); }
+    catch { window.prompt("Salin link ini:", url); }
+  }
+  async function loadShared() {
+    const m = location.hash.match(/^#s=([\w-]+)$/);
+    if (!m) return;
+    try {
+      const d = await decodeShare(m[1]);
+      if (!PLATFORMS[d.p]) throw new Error("platform");
+      selectPlatform(d.p);
+      state.raw = d.raw || ""; $("#rawPrompt").value = state.raw; updateCount();
+      state.analysis = null; state.answers = {};
+      state.result = { ...d.r, note: "Dibuka dari link bagikan. Klik 'Mulai baru' untuk membuat prompt sendiri." };
+      state.activeTab = "prompt";
+      renderResult(); goStep(3);
+    } catch { toast("Link bagikan rusak atau tidak lengkap."); }
+  }
+
+  // ---------------- PWA ----------------
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("#btnInstall").classList.remove("hidden"); });
+  $("#btnInstall").addEventListener("click", async () => {
+    if (!installEvt) return;
+    installEvt.prompt(); await installEvt.userChoice;
+    installEvt = null; $("#btnInstall").classList.add("hidden");
+  });
 
   // ---------------- INIT ----------------
   renderPlatforms();
@@ -439,4 +622,5 @@
   const u = new URLSearchParams(location.search);
   if (u.get("p") && PLATFORMS[u.get("p")]) selectPlatform(u.get("p"));
   if (u.get("q")) { $("#rawPrompt").value = u.get("q"); updateCount(); }
+  loadShared();
 })();
