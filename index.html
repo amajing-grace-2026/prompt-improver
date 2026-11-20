@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Prompt Improver — Super Prompt untuk Veo, Flow, Vids, Imagen & AI Studio</title>
-  <meta name="description" content="Ubah prompt biasa menjadi super prompt yang presisi untuk Google Flow (Veo 3), Google Vids, Imagen / Nano Banana, Gemini di AI Studio, dan model multimodal. Tanya 3-10 pertanyaan cerdas, lalu hasilkan prompt yang jauh lebih baik." />
+  <title>Prompt Improver — Super Prompt untuk Video, Cerita & Prompt Umum</title>
+  <meta name="description" content="Ubah prompt biasa menjadi super prompt yang presisi. Tiga bagian: video & visual (Google Flow / Veo 3, Google Vids, Imagen / Nano Banana), novel & cerpen (story bible, kerangka bab), dan prompt umum (Gemini / AI Studio, Gem, system instruction). Tanya 3-10 pertanyaan cerdas, lalu hasilkan prompt yang jauh lebih baik." />
   <meta name="color-scheme" content="dark light" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,7 +20,7 @@
       <span class="logo" aria-hidden="true">✦</span>
       <div>
         <h1>Prompt Improver</h1>
-        <p>Prompt biasa → super prompt untuk Veo · Flow · Vids · Imagen · AI Studio</p>
+        <p>Prompt biasa → super prompt untuk video, cerita, dan tugas sehari-hari</p>
       </div>
     </div>
     <div class="topbar-actions">
@@ -45,9 +45,10 @@
   <main class="container">
     <!-- STEP 1 -->
     <section id="step1" class="panel step-panel">
-      <h2>1. Pilih target & tempel prompt-mu</h2>
+      <h2>1. Pilih jenis prompt & target, lalu tempel prompt-mu</h2>
       <p class="muted">Tools ini menganalisis apa yang kurang dari prompt, bertanya 3-10 hal yang paling berpengaruh, lalu menyusun prompt baru yang presisi dan sesuai aturan platform.</p>
 
+      <div id="sectionTabs" class="section-tabs" role="tablist" aria-label="Jenis prompt"></div>
       <div id="platformGrid" class="platform-grid" role="radiogroup" aria-label="Platform target"></div>
 
       <div class="row gap">
@@ -195,7 +196,7 @@
   <div id="toast" class="toast hidden" role="status"></div>
 
   <footer class="footer">
-    <p>Prompt Improver · open source (MIT) · Dibuat untuk Google Flow (Veo), Google Vids, Imagen/Nano Banana, Gemini di AI Studio, dan model multimodal. Bukan produk resmi Google.</p>
+    <p>Prompt Improver · open source (MIT) · Untuk video (Google Flow / Veo, Google Vids, Imagen / Nano Banana), novel & cerpen, dan prompt umum di Gemini / AI Studio. Bukan produk resmi Google.</p>
   </footer>
 
   <script src="js/platforms.js"></script>

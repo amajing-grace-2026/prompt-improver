@@ -101,6 +101,155 @@ window.PI_LOCAL = (() => {
   const join = (parts, sep = " ") => parts.filter((s) => s && String(s).trim()).map((s) => String(s).trim()).join(sep);
   const sentence = (s) => (s ? s.replace(/\s+/g, " ").replace(/\s+([,.;:])/g, "$1").replace(/[.\s]+$/, "") + "." : "");
 
+  // ------------------- CERITA (cerpen & novel) -------------------
+  const KISHO = [
+    ["Ki (pengenalan)", "Kenalkan tokoh dan dunianya lewat momen keseharian yang spesifik."],
+    ["Shō (pengembangan)", "Perdalam situasi dan hubungan; biarkan pembaca merasa nyaman."],
+    ["Ten (putaran)", "Hadirkan unsur tak terduga yang mengubah cara kita melihat semuanya."],
+    ["Ketsu (penyatuan)", "Satukan semuanya; akhiri dengan makna baru yang terasa tenang namun dalam."],
+  ];
+  const SHORT_BEATS = [
+    ["Pembuka", "Mulai dari momen yang sudah bergerak; kenalkan tokoh lewat tindakan dalam 1-2 paragraf pertama."],
+    ["Pemicu", "Kejadian yang mengganggu keseimbangan dan memaksa tokoh bertindak."],
+    ["Komplikasi", "Usaha tokoh gagal atau memperburuk keadaan; taruhan naik."],
+    ["Titik balik", "Tokoh menemukan atau memutuskan sesuatu yang mengubah arah cerita."],
+    ["Klimaks", "Konfrontasi dengan konflik utama; tokoh membuat pilihan sulit."],
+    ["Resolusi", "Konsekuensi pilihan itu dan gambar terakhir yang membekas."],
+  ];
+  function novelBeat(i, n) {
+    const f = n <= 1 ? 0 : i / (n - 1);
+    if (i === 0) return ["Pembuka", "Perkenalkan tokoh utama dalam keseharian yang sudah retak; tanam keinginan dan kelemahannya."];
+    if (i === n - 1) return ["Resolusi", "Tunjukkan dunia setelah konflik; perlihatkan perubahan tokoh; tutup tema dengan gambar yang membekas."];
+    if (f <= 0.12) return ["Insiden pemicu", "Kejadian yang mengguncang keseimbangan dan memaksa tokoh memilih."];
+    if (f <= 0.25) return ["Titik tanpa kembali", "Tokoh ragu lalu berkomitmen; akhir babak satu mengunci arah cerita."];
+    if (f < 0.45) return ["Rintangan & sekutu", "Tokoh mencoba dengan cara lama; munculkan subplot, sekutu, dan lawan; taruhan naik."];
+    if (f <= 0.55) return ["Titik tengah", "Pengungkapan atau kemenangan semu yang mengubah pemahaman tokoh tentang konflik."];
+    if (f < 0.72) return ["Tekanan meningkat", "Antagonis membalas; kelemahan tokoh mulai merugikan; hubungan retak."];
+    if (f <= 0.8) return ["Titik terendah", "Tokoh kehilangan sesuatu yang penting; semua tampak gagal."];
+    if (f < 0.93) return ["Menuju klimaks", "Tokoh menemukan kekuatan dari kelemahannya dan menyusun langkah terakhir."];
+    return ["Klimaks", "Konfrontasi utama; tokoh membuat pilihan yang membuktikan perubahannya."];
+  }
+  function chapterCount(len) {
+    if (/web novel|serial/i.test(len)) return 10;
+    const m = len.match(/(\d+)\s*(?:-\s*(\d+))?\s*(bab|chapters?)/i);
+    if (m) return Math.min(30, Math.max(3, Math.round(m[2] ? (+m[1] + +m[2]) / 2 : +m[1])));
+    return 20;
+  }
+  function chapterWords(len, n) {
+    if (/web novel|serial/i.test(len)) return "1.500-2.500 kata";
+    const m = len.match(/(\d+)\s*(?:-\s*(\d+))?\s*(ribu|rb|k)/i);
+    if (m) {
+      const total = (m[2] ? (+m[1] + +m[2]) / 2 : +m[1]) * 1000;
+      const w = Math.round(total / n / 100) * 100;
+      return `sekitar ${w.toLocaleString("id-ID")} kata`;
+    }
+    const k = len.match(/(\d[\d.]*)\s*kata/i);
+    return k ? `sekitar ${k[1]} kata` : "2.000-3.000 kata";
+  }
+
+  function story(raw, a, opts, isNovel) {
+    const v = (id, d = "") => ans(a, id) || d;
+    const genre = v("genre"), premise = v("premise"), hero = v("protagonist"), cast = v("cast");
+    const setting = v("setting_story"), pov = v("pov", "orang ketiga terbatas, masa lalu");
+    const tone = v("tone_story"), aud = v("audience_story", "pembaca dewasa umum");
+    const style = v("style_story", "prosa lugas dan sinematik, detail indrawi yang spesifik, dialog dengan subteks");
+    const theme = v("theme"), ending = v("ending"), avoid = v("avoid_story");
+    const lang = v("language_story", "Bahasa Indonesia yang luwes");
+    const structure = v("structure");
+    const len = isNovel ? v("length_novel", "novel sekitar 60 ribu kata, 20 bab") : v("length_short", "cerpen 1.500-3.000 kata");
+    const mode = opts.mode || "";
+
+    const bible = [
+      `GENRE: ${genre || "tentukan dari ide cerita"}`,
+      `PREMIS: ${premise || raw}`,
+      `TOKOH UTAMA: ${hero || "rancang satu tokoh utama yang spesifik: nama, usia, pekerjaan, keinginan terbesar, ketakutan, kelemahan, dan cara bicara yang khas"}`,
+      isNovel ? `PEMERAN LAIN: ${cast || "rancang antagonis dengan motif yang masuk akal dan 2-3 tokoh pendukung yang masing-masing punya keinginan sendiri"}` : "",
+      `LATAR: ${setting || "pilih latar yang spesifik dan bisa dirasakan: nama tempat, waktu, cuaca, bau, dan suara"}`,
+      `SUDUT PANDANG: ${pov}`,
+      `NADA: ${tone || "selaras dengan genre"}`,
+      theme ? `TEMA: ${theme}` : "",
+      ending ? `AKHIR: ${ending}` : "",
+      `GAYA: ${style}`,
+    ].filter(Boolean).join("\n");
+
+    const rules = [
+      `- Panjang: ${len}.`,
+      `- Pembaca: ${aud}.`,
+      `- Bahasa: ${lang}.`,
+      "- Show, don't tell: tunjukkan emosi lewat aksi, gestur, dan detail indrawi.",
+      "- Dialog terasa natural, punya subteks, dan membedakan suara tiap tokoh.",
+      "- Setiap adegan harus mengubah sesuatu: informasi, hubungan, atau taruhan.",
+      "- Hindari klise khas AI: pembuka dengan cuaca, frasa 'tanpa ia sadari', ceramah moral di akhir, dan penyelesaian kebetulan (deus ex machina).",
+      avoid && !/tidak ada/i.test(avoid) ? `- Batasan konten: ${avoid}.` : "",
+    ].filter(Boolean).join("\n");
+
+    const role = `Kamu adalah ${isNovel ? "novelis" : "penulis cerita pendek"} berpengalaman${genre ? " di genre " + genre : ""}, dengan prosa yang hidup, spesifik, dan bebas klise.`;
+
+    if (!isNovel) {
+      const beats = /kish/i.test(structure) ? KISHO : SHORT_BEATS;
+      const beatText = beats.map(([t, d], i) => `${i + 1}. ${t}: ${d}`).join("\n");
+      const out = /kerangka/i.test(mode)
+        ? "Pertama, tulis kerangka beat (5-7 poin) dan profil singkat tokoh. Berhenti dan tunggu persetujuan saya sebelum menulis cerita."
+        : /pembuka/i.test(mode)
+          ? "Tulis 3 versi paragraf pembuka dengan pendekatan berbeda (aksi, suasana, dialog), masing-masing maksimal 150 kata dan diberi label."
+          : "Tulis judul, lalu cerita lengkap. Jangan tambahkan komentar pembuka atau penutup.";
+      const prompt = `# PERAN\n${role}\n\n# IDE CERITA\n${raw}\n\n# STORY BIBLE\n${bible}\n\n# STRUKTUR\n${beatText}\n\n# ATURAN MENULIS\n${rules}\n\n# OUTPUT\n${out}`;
+      return {
+        prompt,
+        storyBible: bible,
+        outline: beats.map(([t, d], i) => ({ n: i + 1, title: t, summary: d })),
+        system: `${role}\n\nSTORY BIBLE:\n${bible}\n\nATURAN MENULIS:\n${rules}`,
+        settings: { mode: mode || "Tulis cerpen utuh", panjang: len, temperature: "0.9-1.0" },
+        variants: [
+          { label: "Kerangka dulu, baru tulis", prompt: prompt.replace(/# OUTPUT\n[\s\S]*$/, "# OUTPUT\nPertama, tulis kerangka beat dan profil tokoh. Berhenti dan tunggu persetujuan saya.") },
+          { label: "Tiga versi pembuka", prompt: prompt.replace(/# OUTPUT\n[\s\S]*$/, "# OUTPUT\nTulis 3 versi paragraf pembuka berbeda (aksi, suasana, dialog), maksimal 150 kata masing-masing.") },
+        ],
+        changes: [
+          "Menambahkan peran penulis yang sesuai genre.",
+          "Menyusun story bible: premis, tokoh, latar, sudut pandang, nada, gaya.",
+          "Memberi struktur beat agar alur tidak kehilangan arah.",
+          "Menambahkan aturan menulis anti-klise dan 'show, don't tell'.",
+          "Menetapkan panjang, pembaca, dan bahasa naskah.",
+        ],
+        tips: PLATFORMS.cerpen.guide.slice(0, 4),
+      };
+    }
+
+    const n = chapterCount(len);
+    const words = chapterWords(len, n);
+    const outline = Array.from({ length: n }, (_, i) => {
+      const [t, d] = novelBeat(i, n);
+      return {
+        n: i + 1, title: t, summary: d,
+        prompt: `Tulis Bab ${i + 1} (${t}) dari novel ini. Tujuan bab: ${d} Ikuti STORY BIBLE dan ATURAN MENULIS di instruksi sistem. Panjang bab: ${words}. Buka dengan kalimat yang langsung menarik dan akhiri dengan kait yang membuat pembaca ingin lanjut.${i > 0 ? " Ringkasan bab sebelumnya: (tempel 3-5 kalimat ringkasan bab sebelumnya di sini)." : ""}`,
+      };
+    });
+    const steps = /tulis bab/i.test(mode)
+      ? "Tulis bab yang saya sebutkan berikut ini berdasarkan story bible dan kerangka. Jaga konsistensi nama, fakta, dan suara tokoh."
+      : /lanjutkan|revisi/i.test(mode)
+        ? "Saya akan menempelkan naskah saya. Baca dulu, rangkum gaya, tokoh, dan konsistensinya dalam 5 poin, lalu lanjutkan atau revisi sesuai permintaan saya tanpa mengubah suara penulis."
+        : `1. Perluas story bible: profil lengkap tiap tokoh (keinginan, ketakutan, rahasia, cara bicara), aturan dunia, dan garis waktu.\n2. Susun kerangka ${n} bab: judul, ringkasan 3 kalimat, fungsi bab dalam busur cerita, dan kait di akhir bab.\n3. Berhenti dan tunggu persetujuan saya. Setelah itu tulis satu bab per permintaan.`;
+    const prompt = `# PERAN\n${role}\n\n# IDE NOVEL\n${raw}\n\n# STORY BIBLE\n${bible}\n\n# STRUKTUR\n${structure || "Tiga babak klasik"}, ${n} bab, ${words} per bab.\n\n# ATURAN MENULIS\n${rules}\n- Jaga konsistensi nama, usia, fakta, dan garis waktu di seluruh bab.\n\n# LANGKAH KERJA\n${steps}`;
+    return {
+      prompt,
+      storyBible: bible,
+      outline,
+      system: `${role}\n\nSTORY BIBLE:\n${bible}\n\nATURAN MENULIS:\n${rules}\n- Jaga konsistensi nama, usia, fakta, dan garis waktu di seluruh bab.`,
+      settings: { mode: mode || "Story bible + kerangka bab", panjang: len, bab: n, "per bab": words, temperature: "0.9-1.0" },
+      variants: [
+        { label: "Prompt ringkas", prompt: `${role} Bantu saya menulis novel: ${raw}. ${genre ? "Genre " + genre + ". " : ""}${n} bab, ${words} per bab. Mulai dengan story bible dan kerangka bab, lalu tunggu persetujuan saya.` },
+      ],
+      changes: [
+        "Mengubah ide menjadi sesi kerja novel bertahap: story bible, kerangka, lalu bab demi bab.",
+        `Menyusun kerangka ${n} bab berdasarkan struktur tiga babak.`,
+        "Menyediakan prompt siap tempel untuk setiap bab.",
+        "Menambahkan aturan konsistensi dan anti-klise.",
+        "Menyediakan System Instruction untuk AI Studio agar konsisten sepanjang sesi.",
+      ],
+      tips: PLATFORMS.novel.guide.slice(3, 8),
+    };
+  }
+
   const GEN = {
     veo(raw, a, opts) {
       const subject = ans(a, "subject"), action = ans(a, "action"), setting = ans(a, "setting");
@@ -283,6 +432,43 @@ window.PI_LOCAL = (() => {
           "Menyediakan System Instruction untuk AI Studio.",
         ],
         tips: PLATFORMS.gemini.guide.slice(0, 4),
+      };
+    },
+
+    cerpen(raw, a, opts) { return story(raw, a, opts, false); },
+    novel(raw, a, opts) { return story(raw, a, opts, true); },
+
+    assistant(raw, a, opts) {
+      const v = (id, d = "") => ans(a, id) || d;
+      const purpose = v("purpose", raw), role = v("role"), scope = v("scope"), know = v("knowledge"), flow = v("workflow");
+      const tone = v("tone", "ramah, jelas, dan profesional");
+      const fmt = v("format", "jawaban singkat (maksimal 5 kalimat) kecuali pengguna meminta detail; gunakan poin bila ada langkah");
+      const edge = v("edge"), ex = v("examples"), lang = v("language", "Bahasa Indonesia");
+      const identity = role && !/tidak perlu/i.test(role) ? `Kamu adalah ${role}.` : "Kamu adalah asisten khusus yang membantu sesuai tujuan di bawah.";
+      const prompt = [
+        `# IDENTITAS\n${identity}`,
+        `# TUJUAN\n${purpose}${purpose !== raw ? "\nKebutuhan pemilik: " + raw : ""}`,
+        `# RUANG LINGKUP\n- Fokus pada tujuan di atas.\n- ${scope || "Jika diminta hal di luar tujuan, tolak dengan sopan dan arahkan kembali."}\n- Jangan mengarang fakta, harga, kebijakan, atau janji yang tidak ada di sumber pengetahuan.`,
+        `# PENGETAHUAN & SUMBER\n${know || "Gunakan informasi dari pemilik di bawah ini atau di file terlampir sebagai sumber utama."}\n<pengetahuan>\n(tempel FAQ, katalog, harga, atau kebijakan di sini)\n</pengetahuan>`,
+        `# ALUR PERCAKAPAN\n${flow || "1. Sapa singkat. 2. Tanyakan kebutuhan bila belum jelas (maksimal 2 pertanyaan). 3. Jawab atau beri rekomendasi. 4. Tawarkan langkah berikutnya."}`,
+        `# GAYA & FORMAT\n- Nada: ${tone}.\n- Format: ${fmt}.\n- Bahasa: ${lang}; ikuti bahasa pengguna bila berbeda.`,
+        `# KASUS KHUSUS\n- Tidak tahu jawabannya: ${edge || "katakan jujur, jangan menebak, dan arahkan ke kontak manusia."}\n- Pertanyaan di luar topik: tolak dengan sopan dan kembalikan ke topik.\n- Pengguna marah atau komplain: akui perasaannya, rangkum masalahnya, tawarkan solusi atau eskalasi.\n- Permintaan berbahaya atau melanggar kebijakan: tolak dengan sopan.`,
+        `# CONTOH\n${ex && !/tidak ada/i.test(ex) ? ex : "Pengguna: Halo, bisa bantu?\nAsisten: Halo! Tentu. Boleh ceritakan apa yang kamu butuhkan?"}`,
+      ].join("\n\n");
+      return {
+        prompt,
+        settings: { mode: opts.mode || "Gemini Gem" },
+        variants: [
+          { label: "Versi ringkas", prompt: `${identity} Tujuan: ${purpose}. ${scope ? "Batasan: " + scope + ". " : ""}Nada ${tone}. Format: ${fmt}. Jangan mengarang informasi; jika tidak tahu, katakan jujur dan arahkan ke manusia. Jawab dalam ${lang}.` },
+          { label: "Pesan pembuka asisten", prompt: "Halo! 👋 Saya siap membantu. Boleh ceritakan apa yang sedang kamu butuhkan?" },
+        ],
+        changes: [
+          "Menyusun instruksi sebagai 'job description': identitas, tujuan, lingkup, sumber, alur, gaya, kasus khusus.",
+          "Menambahkan aturan anti-mengarang dan perilaku saat tidak tahu.",
+          "Menyiapkan tempat untuk data pengetahuan (FAQ, katalog, kebijakan).",
+          "Menambahkan contoh percakapan untuk mengunci gaya.",
+        ],
+        tips: PLATFORMS.assistant.guide.slice(0, 4),
       };
     },
 

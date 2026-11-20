@@ -1,6 +1,12 @@
 # ✦ Prompt Improver
 
-**Ubah prompt biasa menjadi super prompt yang presisi, tajam, dan sesuai aturan platform** — untuk **Google Flow (Veo 3)**, **Google Vids**, **Imagen / Nano Banana**, **Gemini di AI Studio**, dan model **multimodal / omni**.
+**Ubah prompt biasa menjadi super prompt yang presisi, tajam, dan sesuai aturan platform.** Aplikasi dibagi menjadi tiga bagian:
+
+| Bagian | Target | Hasil khusus |
+|---|---|---|
+| 🎬 **Video & Visual** | Google Flow (Veo 3), Google Vids, Imagen / Nano Banana, model multimodal | Negative prompt, JSON, shot list multi-klip, character bible, storyboard Vids |
+| 📖 **Novel & Cerpen** | Gemini / AI Studio atau model teks lain | Story bible, beat sheet cerpen, kerangka bab novel dengan prompt siap tempel per bab, System Instruction |
+| 💬 **Prompt Umum** | Gemini / AI Studio / chatbot; Gemini Gem / system instruction | Prompt terstruktur (peran, konteks, tugas, aturan, format), instruksi asisten lengkap |
 
 Web app statis, tanpa backend. Jalan di browser, bisa di-host gratis di GitHub Pages.
 
@@ -43,7 +49,10 @@ Engine otomatis memilih AI jika key tersedia, dan jatuh ke Lokal jika gagal.
 - **Veo / Flow**: satu aksi per klip 8 detik; urutan shot → subjek → aksi → latar → cahaya → gaya → audio; dialog dalam tanda kutip dengan penutur; audio dideskripsikan eksplisit; larangan dipindah ke negative prompt sebagai kata benda (`subtitles, captions, text overlay`); character sheet identik antar klip.
 - **Google Vids**: brief "Help me create" berisi topik, audiens, durasi, nada, poin wajib, CTA; storyboard per adegan dengan narasi ≤ 20 kata dan teks layar ≤ 8 kata; klip AI mengikuti aturan Veo.
 - **Imagen / Nano Banana**: subjek + pose + latar + komposisi + cahaya + palet + gaya/medium + lensa + kualitas + aspect ratio; istilah fotografi nyata; instruksi edit percakapan untuk Nano Banana.
-- **Gemini / AI Studio**: ROLE → CONTEXT → TASK → RULES → OUTPUT FORMAT → EXAMPLES → QUALITY BAR, aturan anti-halusinasi, izin bertanya, system instruction terpisah.
+- **Cerpen**: peran penulis sesuai genre, story bible (tokoh dengan keinginan, ketakutan, kelemahan, dan suara), latar indrawi, sudut pandang, beat sheet sesuai panjang, aturan anti-klise, dan mode output (cerita utuh, kerangka dulu, atau tiga versi pembuka).
+- **Novel**: sesi kerja bertahap (story bible → kerangka → bab demi bab), jumlah bab dan kata per bab dari pilihan panjang, prompt per bab, aturan konsistensi, dan System Instruction untuk AI Studio.
+- **Asisten / Gem**: identitas, tujuan, ruang lingkup, sumber pengetahuan, alur percakapan, gaya, kasus khusus, dan contoh percakapan. Uji A/B mengirim pesan uji ke instruksi lama dan baru.
+- **Tugas umum (Gemini / AI Studio)**: ROLE → CONTEXT → TASK → RULES → OUTPUT FORMAT → EXAMPLES → QUALITY BAR, aturan anti-halusinasi, izin bertanya, system instruction terpisah.
 - **Omni / Multimodal**: modalitas output di kalimat pertama; blok berlabel; aturan penanganan referensi (apa yang dijaga vs diubah).
 
 ## Fitur v2

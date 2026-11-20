@@ -1,6 +1,6 @@
 /* Service worker: network-first untuk file aplikasi, cache sebagai cadangan offline.
    Permintaan ke domain lain (Gemini API, Google Fonts) tidak disentuh. */
-const CACHE = "prompt-improver-v2";
+const CACHE = "prompt-improver-v3";
 const SHELL = ["./", "index.html", "css/styles.css", "js/platforms.js", "js/presets.js", "js/local-engine.js", "js/ai-engine.js", "js/app.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

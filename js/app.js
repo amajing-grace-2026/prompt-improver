@@ -2,7 +2,13 @@
    app.js — state, rendering, interaksi
    ============================================================ */
 (() => {
-  const { PLATFORMS, ORDER, wc } = window.PI_PLATFORMS;
+  const { PLATFORMS, ORDER, SECTIONS, wc } = window.PI_PLATFORMS;
+  const TEXT_PLATFORMS = ["gemini", "cerpen", "novel", "assistant"];
+  const DROP_TEXT = {
+    video: "📎 Klik atau seret gambar ke sini (frame awal Flow, foto produk, karakter, gambar yang mau diedit)",
+    story: "📎 Gambar inspirasi tokoh, tempat, atau suasana (dibaca engine AI)",
+    general: "📎 Gambar atau screenshot sebagai konteks tugas (dibaca engine AI)",
+  };
   const LOCAL = window.PI_LOCAL;
   const AI = window.PI_AI;
   const $ = (s) => document.querySelector(s);
@@ -17,7 +23,8 @@
 
   // ---------------- STATE ----------------
   const state = {
-    platform: localStorage.getItem("pi_platform") || "veo",
+    platform: PLATFORMS[localStorage.getItem("pi_platform")] ? localStorage.getItem("pi_platform") : "veo",
+    section: "video",
     mode: "",
     outputLang: "en",
     raw: "",
@@ -70,26 +77,34 @@
 
   // ---------------- STEP 1 ----------------
   function renderPlatforms() {
+    const sec = SECTIONS.find((s) => s.id === state.section) || SECTIONS[0];
+    $("#sectionTabs").innerHTML = SECTIONS.map((s) => `<button class="section-tab ${s.id === sec.id ? "is-active" : ""}" role="tab" aria-selected="${s.id === sec.id}" data-sec="${s.id}">
+        <span class="ico">${s.icon}</span><span><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></span></button>`).join("");
+    $$("#sectionTabs .section-tab").forEach((b) => b.addEventListener("click", () => selectSection(b.dataset.sec)));
     const grid = $("#platformGrid");
-    grid.innerHTML = ORDER.map((id) => {
+    grid.innerHTML = sec.platforms.map((id) => {
       const p = PLATFORMS[id];
       return `<button class="pf-card ${id === state.platform ? "is-selected" : ""}" role="radio" aria-checked="${id === state.platform}" data-pf="${id}">
         <span class="ico">${p.icon}</span><b>${esc(p.name)}</b><small>${esc(p.short)}</small></button>`;
     }).join("");
     grid.querySelectorAll(".pf-card").forEach((b) => b.addEventListener("click", () => selectPlatform(b.dataset.pf)));
+    $("#dropText").textContent = DROP_TEXT[sec.id] || DROP_TEXT.video;
     renderModes();
     renderExamples();
   }
+  function selectSection(id) {
+    if (id === state.section) return;
+    const sec = SECTIONS.find((s) => s.id === id);
+    if (!sec) return;
+    const last = localStorage.getItem("pi_platform_" + id);
+    selectPlatform(sec.platforms.includes(last) ? last : sec.platforms[0]);
+  }
   function selectPlatform(id) {
     state.platform = id;
+    state.section = PLATFORMS[id].section || "video";
     localStorage.setItem("pi_platform", id);
-    $$(".pf-card").forEach((b) => {
-      const on = b.dataset.pf === id;
-      b.classList.toggle("is-selected", on);
-      b.setAttribute("aria-checked", on);
-    });
-    renderModes();
-    renderExamples();
+    localStorage.setItem("pi_platform_" + state.section, id);
+    renderPlatforms();
     $("#langSelect").value = PLATFORMS[id].outputLang;
     state.outputLang = PLATFORMS[id].outputLang;
     renderTips();
@@ -242,6 +257,9 @@
     image: [["Buka AI Studio ↗", "https://aistudio.google.com"], ["Buka Whisk ↗", "https://labs.google/fx/tools/whisk"], ["Buka Gemini ↗", "https://gemini.google.com"]],
     gemini: [["Buka AI Studio ↗", "https://aistudio.google.com/prompts/new_chat"], ["Buka Gemini ↗", "https://gemini.google.com"]],
     omni: [["Buka AI Studio ↗", "https://aistudio.google.com"], ["Buka Google Flow ↗", "https://labs.google/flow"]],
+    cerpen: [["Buka AI Studio ↗", "https://aistudio.google.com/prompts/new_chat"], ["Buka Gemini ↗", "https://gemini.google.com"]],
+    novel: [["Buka AI Studio ↗", "https://aistudio.google.com/prompts/new_chat"], ["Buka Gemini ↗", "https://gemini.google.com"]],
+    assistant: [["Buat Gem ↗", "https://gemini.google.com/gems/create"], ["Buka AI Studio ↗", "https://aistudio.google.com/prompts/new_chat"]],
   };
 
   function codebox(text, label = "Salin") {
@@ -251,7 +269,9 @@
   function renderResult() {
     const r = state.result;
     const p = PLATFORMS[state.platform];
-    const tabs = [["prompt", "Super prompt"]];
+    const tabs = [["prompt", state.platform === "assistant" ? "Instruksi asisten" : "Super prompt"]];
+    if (r.storyBible) tabs.push(["bible2", "Story bible"]);
+    if (r.outline?.length) tabs.push(["outline", `Kerangka (${r.outline.length})`]);
     if (r.negative) tabs.push(["negative", "Negative prompt"]);
     if (r.system) tabs.push(["system", "System instruction"]);
     if (r.json) tabs.push(["json", "JSON (terstruktur)"]);
@@ -267,6 +287,8 @@
       json: r.json ? codebox(JSON.stringify(r.json, null, 2)) : "",
       bible: r.characterBible ? `<p class="muted small">Tempel teks ini PERSIS sama di setiap klip agar karakter dan dunia tetap konsisten.</p>${codebox(r.characterBible)}` : "",
       shots: (r.shotList || []).map((s) => `<div class="shot"><b>Shot ${s.n} — ${esc(s.title || "")}</b><pre>${esc(s.prompt)}</pre><div class="row gap" style="margin-top:6px"><button class="btn small copy" data-copy="${esc(s.prompt)}">Salin shot ${s.n}</button></div></div>`).join(""),
+      bible2: r.storyBible ? `<p class="muted small">Acuan tetap untuk seluruh cerita. Di AI Studio, tempel di System Instruction bersama aturan menulis.</p>${codebox(r.storyBible)}` : "",
+      outline: (r.outline || []).map((o) => `<div class="shot"><b>${state.platform === "novel" ? "Bab" : "Beat"} ${o.n} — ${esc(o.title || "")}</b><div class="meta">${esc(o.summary || "")}</div>${o.prompt ? `<pre>${esc(o.prompt)}</pre><div class="row gap" style="margin-top:6px"><button class="btn small copy" data-copy="${esc(o.prompt)}">Salin prompt bab ${o.n}</button></div>` : ""}</div>`).join(""),
       story: (r.storyboard || []).map((s) => `<div class="shot"><b>Adegan ${s.n} — ${esc(s.title || "")}</b>
           <div class="meta">🎙 Narasi: ${esc(s.narration || "-")}</div><div class="meta">🔤 Teks layar: ${esc(s.onScreenText || "-")}</div>
           <pre>${esc(s.visual || "")}</pre><div class="row gap" style="margin-top:6px"><button class="btn small copy" data-copy="${esc(s.visual || "")}">Salin prompt visual</button></div></div>`).join(""),
@@ -314,6 +336,8 @@
     if (r.negative) t += `\n## NEGATIVE PROMPT\n${r.negative}\n`;
     if (r.system) t += `\n## SYSTEM INSTRUCTION\n${r.system}\n`;
     if (r.settings) t += `\n## SETTINGS\n${Object.entries(r.settings).map(([k, v]) => `${k}: ${v}`).join("\n")}\n`;
+    if (r.storyBible) t += `\n## STORY BIBLE\n${r.storyBible}\n`;
+    if (r.outline?.length) t += `\n## KERANGKA\n${r.outline.map((o) => `${o.n}. ${o.title} — ${o.summary}${o.prompt ? `\n   Prompt: ${o.prompt}` : ""}`).join("\n")}\n`;
     if (r.characterBible) t += `\n## CHARACTER BIBLE\n${r.characterBible}\n`;
     if (r.shotList?.length) t += `\n## SHOT LIST\n${r.shotList.map((s) => `Shot ${s.n} — ${s.title}\n${s.prompt}`).join("\n\n")}\n`;
     if (r.storyboard?.length) t += `\n## STORYBOARD\n${r.storyboard.map((s) => `Adegan ${s.n} — ${s.title}\nNarasi: ${s.narration}\nTeks layar: ${s.onScreenText}\nVisual: ${s.visual}`).join("\n\n")}\n`;
@@ -529,7 +553,10 @@
     if (!box) return;
     const hasKey = !!AI.getKey();
     let html = "";
-    if (state.platform === "gemini") html = `<div class="lab"><div><b>🧪 Uji A/B</b><p class="muted small">Jalankan prompt asli dan super prompt di Gemini, lalu bandingkan jawabannya berdampingan.</p></div><button class="btn" id="btnAB" ${hasKey ? "" : "disabled"}>Jalankan uji A/B</button></div>`;
+    if (TEXT_PLATFORMS.includes(state.platform)) {
+      const isAsst = state.platform === "assistant";
+      html = `<div class="lab"><div class="lab-text"><b>🧪 Uji A/B</b><p class="muted small">${isAsst ? "Kirim satu pesan uji ke asisten dengan instruksi asli dan instruksi baru, lalu bandingkan jawabannya." : "Jalankan prompt asli dan super prompt di Gemini, lalu bandingkan hasilnya berdampingan."}</p>${isAsst ? `<input id="abMsg" type="text" value="Halo, saya mau tanya. Bisa bantu?" aria-label="Pesan uji untuk asisten" />` : ""}</div><button class="btn" id="btnAB" ${hasKey ? "" : "disabled"}>Jalankan uji A/B</button></div>`;
+    }
     if (state.platform === "image") html = `<div class="lab"><div><b>🖼️ Tes generate gambar</b><p class="muted small">Coba super prompt langsung dengan model gambar Gemini (Nano Banana). Butuh key yang punya akses model gambar.</p></div><button class="btn" id="btnImgTest" ${hasKey ? "" : "disabled"}>Generate gambar</button></div>`;
     if (html && !hasKey) html += `<p class="hint">Fitur ini butuh API key Gemini. <a href="#" class="js-open-settings">Pasang key</a>.</p>`;
     box.innerHTML = html ? html + `<div id="labOut"></div>` : "";
@@ -542,7 +569,12 @@
     $("#labOut").innerHTML = `<div class="ab-grid"><div class="card"><h4>Prompt asli</h4><div class="ab-text" id="abA">⏳ Menjalankan…</div></div><div class="card ab-win"><h4>Super prompt ✦</h4><div class="ab-text" id="abB">⏳ Menjalankan…</div></div></div>`;
     $("#btnAB").disabled = true;
     const show = (sel, p) => p.then((t) => ($(sel).textContent = t)).catch((e) => ($(sel).textContent = "✗ " + e.message));
-    await Promise.all([show("#abA", AI.run(state.raw, "", state.image)), show("#abB", AI.run(r.prompt, r.system || "", state.image))]);
+    if (state.platform === "assistant") {
+      const msg = $("#abMsg")?.value.trim() || "Halo, bisa bantu?";
+      await Promise.all([show("#abA", AI.run(msg, state.raw, state.image)), show("#abB", AI.run(msg, r.prompt, state.image))]);
+    } else {
+      await Promise.all([show("#abA", AI.run(state.raw, "", state.image)), show("#abB", AI.run(r.prompt, r.system || "", state.image))]);
+    }
     $("#btnAB").disabled = false;
   }
   async function runImageTest() {
@@ -580,7 +612,7 @@
   }
   async function shareResult() {
     const r = state.result;
-    const keep = ["prompt", "negative", "system", "json", "characterBible", "shotList", "storyboard", "variants", "settings", "changes", "tips", "before", "after", "engine"];
+    const keep = ["prompt", "negative", "system", "json", "storyBible", "outline", "characterBible", "shotList", "storyboard", "variants", "settings", "changes", "tips", "before", "after", "engine"];
     const payload = { v: 1, p: state.platform, raw: state.raw, r: Object.fromEntries(keep.filter((k) => r[k] != null && r[k] !== "").map((k) => [k, r[k]])) };
     const url = `${location.origin}${location.pathname}#s=${await encodeShare(payload)}`;
     try { await navigator.clipboard.writeText(url); toast("Link tersalin ✓ — prompt tersimpan di dalam link"); }

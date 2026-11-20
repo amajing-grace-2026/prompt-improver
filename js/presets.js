@@ -141,3 +141,78 @@ window.PI_PRESETS = {
       constraints: "change only what is requested; keep lighting direction consistent" } },
   ],
 };
+
+// ---------- Cerita (cerpen & novel memakai daftar yang sama) ----------
+(() => {
+  const STORY = [
+    { id: "thriller", label: "🔪 Thriller psikologis", fields: {
+      genre: "Thriller psikologis",
+      pov: "Orang pertama (aku), narator yang tidak sepenuhnya bisa dipercaya",
+      tone_story: "Tegang, sunyi, paranoid",
+      style_story: "Kalimat pendek saat tegang, banyak subteks, petunjuk kecil yang ditanam sejak awal",
+      ending: "Twist mengejutkan yang terasa tak terhindarkan saat dibaca ulang" } },
+    { id: "romance", label: "💗 Romansa hangat", fields: {
+      genre: "Romansa kontemporer",
+      pov: "Orang ketiga terbatas, bergantian antara dua tokoh utama",
+      tone_story: "Hangat, manis, sesekali getir",
+      theme: "Keberanian untuk jujur pada perasaan",
+      ending: "Bahagia yang diperjuangkan" } },
+    { id: "horror", label: "👻 Horor urban legend", fields: {
+      genre: "Horor supranatural berbasis urban legend Indonesia",
+      setting_story: "Kota kecil atau desa di Jawa masa kini",
+      tone_story: "Mencekam, pelan, atmosferik",
+      style_story: "Detail indrawi (bau, suara, rasa dingin); teror dibangun perlahan, jarang menunjukkan hantunya langsung",
+      ending: "Terbuka dan menghantui" } },
+    { id: "fantasy", label: "🐉 Fantasi epik", fields: {
+      genre: "Fantasi epik dengan sistem sihir yang punya aturan dan harga",
+      setting_story: "Dunia rekaan dengan politik, sejarah, dan geografi yang konsisten",
+      structure: "Hero's journey",
+      tone_story: "Epik dan megah, dengan momen personal yang menyentuh",
+      pov: "Orang ketiga terbatas, beberapa tokoh POV" } },
+    { id: "scifi", label: "🚀 Fiksi ilmiah", fields: {
+      genre: "Fiksi ilmiah near-future",
+      theme: "Teknologi dan kemanusiaan",
+      style_story: "Prosa jernih; konsep sains dijelaskan lewat pengalaman tokoh, bukan ceramah",
+      tone_story: "Penuh rasa ingin tahu, sedikit melankolis" } },
+    { id: "slice", label: "🌱 Slice of life", fields: {
+      genre: "Slice of life / drama keluarga",
+      structure: "Kishōtenketsu (tanpa konflik frontal)",
+      tone_story: "Hangat, reflektif",
+      style_story: "Detail keseharian yang spesifik, dialog natural, humor kecil",
+      ending: "Pahit-manis" } },
+    { id: "kids", label: "🧸 Cerita anak", fields: {
+      audience_story: "Anak 6-9 tahun",
+      tone_story: "Ceria, lucu, aman",
+      style_story: "Kalimat pendek, kata sederhana, pengulangan berirama, cocok dibacakan",
+      avoid_story: "Tanpa kekerasan dan tanpa hal yang terlalu menakutkan",
+      theme: "Persahabatan dan keberanian",
+      ending: "Bahagia dengan pesan moral yang tidak menggurui" } },
+  ];
+  window.PI_PRESETS.cerpen = STORY;
+  window.PI_PRESETS.novel = STORY;
+
+  // ---------- Asisten / Gem ----------
+  window.PI_PRESETS.assistant = [
+    { id: "cs", label: "🛒 CS toko online", fields: {
+      purpose: "Menjawab pertanyaan pelanggan toko online: produk, stok, harga, ongkir, dan retur",
+      tone: "Ramah, sopan, singkat",
+      scope: "Hanya topik toko; tidak menjanjikan diskon atau stok di luar data yang diberikan",
+      edge: "Jika tidak tahu, katakan jujur dan arahkan ke admin lewat WhatsApp",
+      format: "Maksimal 3 kalimat, diakhiri satu pertanyaan lanjutan" } },
+    { id: "tutor", label: "📚 Tutor belajar", fields: {
+      purpose: "Membantu siswa memahami materi, bukan memberi jawaban jadi",
+      role: "guru yang sabar dan memakai metode bertanya (Socratic)",
+      workflow: "Tanya level siswa, jelaskan bertahap dengan contoh, beri soal latihan, lalu beri umpan balik",
+      tone: "Ramah dan menyemangati" } },
+    { id: "code", label: "🧑‍💻 Asisten coding", fields: {
+      role: "senior software engineer yang teliti",
+      format: "Kode lengkap dalam blok kode, lalu penjelasan singkat dan cara menguji",
+      scope: "Selalu sebutkan asumsi dan risiko; jangan mengarang API atau library",
+      edge: "Jika kebutuhan belum jelas, ajukan maksimal 2 pertanyaan sebelum menulis kode" } },
+    { id: "content", label: "📣 Asisten konten sosmed", fields: {
+      purpose: "Membuat ide konten, caption, dan naskah video pendek untuk brand",
+      format: "3 opsi, masing-masing: hook, caption, CTA, dan 5 hashtag",
+      tone: "Santai dan engaging, sesuai suara brand",
+      knowledge: "Profil brand, target audiens, dan produk yang akan saya tempel" } },
+  ];
+})();

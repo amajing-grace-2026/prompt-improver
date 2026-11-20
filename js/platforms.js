@@ -522,6 +522,141 @@ window.PI_PLATFORMS = (() => {
   // -----------------------------------------------------------
   // PLATFORM PROFILES
   // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  // Dimensi CERITA (cerpen & novel) dan ASISTEN (Gem / system instruction)
+  // -----------------------------------------------------------
+  const S = {
+    genre: rx("genre", "horor", "horror", "hantu", "romans\\w*", "romance", "cinta", "thriller", "fantasi", "fantasy", "sci[- ]?fi", "fiksi ilmiah",
+      "science fiction", "misteri", "mystery", "detektif", "detective", "drama", "komedi", "comedy", "slice of life", "petualangan", "adventure",
+      "distopia", "dystopia", "silat", "wuxia", "isekai", "fabel", "dongeng", "fairy tale", "sejarah", "historical", "psikologis", "psychological", "aksi", "action"),
+    premise: rx("konflik", "conflict", "premis", "premise", "ingin", "wants?", "harus", "must", "menghadapi", "berjuang", "mencari", "menemukan", "terjebak",
+      "kehilangan", "balas dendam", "revenge", "rahasia", "secret", "misi", "mission", "melawan", "against", "kabur", "escape"),
+    who: rx("tokoh", "karakter", "character", "protagonis", "protagonist", "bernama", "named", "seorang", "a young", "an old", "gadis", "pemuda", "detektif",
+      "penyihir", "putri", "pangeran", "ibu", "ayah", "nenek", "kakek", "mahasiswa", "siswa", "guru", "dokter", "polisi"),
+    when_where: rx("tahun", "abad", "era", "\\d{4}", "masa", "zaman", "dunia", "kerajaan", "world", "kingdom", "kota", "desa", "village", "city", "jakarta",
+      "bandung", "jogja", "yogyakarta", "surabaya", "malang", "bali", "jawa", "sumatra", "planet", "kapal", "sekolah", "kampus", "rumah sakit"),
+    pov: /orang (pertama|ketiga|kedua)|first[- ]person|third[- ]person|second[- ]person|\bpov\b|sudut pandang|point of view|narator|narrator/i,
+    audience: rx("anak", "anak-anak", "remaja", "dewasa", "young adult", "pembaca", "readers?", "kids?", "children", "teens?", "usia", "umur"),
+    length: /\d+(\.\d+)?\s?(ribu|rb|k)?\s?(kata|words?)|\d+\s?(bab|chapters?|halaman|pages?)|flash fiction|novela|novelette|cerpen pendek|panjang/i,
+    structure: rx("babak", "acts?", "hero'?s journey", "plot", "alur", "beat", "struktur", "structure", "kishotenketsu", "kilas balik", "flashback", "in medias res", "save the cat"),
+    style: /gaya (bahasa|penulisan|menulis)|seperti (karya|tulisan|gaya)|style of|prosa|prose|puitis|poetic|lugas|sinematik|cinematic|in the style|ala /i,
+    theme: /tema|theme|pesan moral|moral|makna|tentang (kehilangan|cinta|keluarga|persahabatan|identitas|harapan)|about (loss|love|family|friendship|identity|hope)/i,
+    ending: /ending|akhir(nya)?|berakhir|twist|happy|bahagia|tragis|tragic|terbuka|open[- ]ended|pahit/i,
+    cast: rx("antagonis", "antagonist", "villain", "penjahat", "musuh", "rival", "sahabat", "tokoh (lain|pendukung)", "supporting", "kekasih", "keluarga", "geng", "tim"),
+    tone: rx("mood", "nada", "suasana", "atmosfer", "tone", "gelap", "dark", "hangat", "warm", "lucu", "funny", "tegang", "tense", "mencekam", "menyentuh",
+      "melankolis", "melancholic", "ringan", "light", "epik", "epic", "romantis", "sedih", "sad"),
+  };
+
+  Object.assign(D, {
+    genre: { id: "genre", label: "Genre", weight: 3, test: (p) => S.genre.test(p),
+      question: "Genre dan subgenre apa yang kamu inginkan?",
+      why: "Genre menentukan janji kepada pembaca: ritme, tingkat ketegangan, dan jenis akhir yang memuaskan.",
+      options: ["Thriller psikologis", "Romansa kontemporer", "Horor supranatural lokal", "Fantasi", "Fiksi ilmiah", "Misteri / detektif", "Drama keluarga / slice of life", "Komedi"],
+      placeholder: "cth: misteri pembunuhan di kota kecil dengan sentuhan horor" },
+    premise: { id: "premise", label: "Premis & konflik", weight: 3, test: (p) => wc(p) >= 14 && S.premise.test(p),
+      question: "Apa premis dan konflik utamanya? Siapa menginginkan apa, dan apa yang menghalanginya?",
+      why: "Cerita hidup dari keinginan yang terhalang. Tanpa konflik yang jelas, model menulis rangkaian kejadian yang datar.",
+      options: ["Tokoh mengejar tujuan yang dihalangi pihak lain", "Tokoh menyimpan rahasia yang mulai terbongkar", "Tokoh harus memilih antara dua hal yang sama berharga", "Tokoh terjebak situasi dan harus keluar"],
+      placeholder: "cth: seorang penjaga mercusuar menemukan surat yang ditulis dirinya sendiri 30 tahun dari masa depan" },
+    protagonist: { id: "protagonist", label: "Tokoh utama", weight: 3, test: (p) => S.who.test(p) || K.character.test(p),
+      question: "Siapa tokoh utamanya? Sebutkan nama, usia, apa yang ia inginkan, dan apa kelemahan atau ketakutannya.",
+      why: "Tokoh dengan keinginan dan kelemahan spesifik membuat pembaca peduli dan memberi arah perubahan tokoh.",
+      options: ["Orang biasa yang terseret situasi luar biasa", "Tokoh ambisius dengan kelemahan fatal", "Anti-hero yang abu-abu moralnya", "Anak / remaja yang sedang mencari jati diri"],
+      placeholder: "cth: Sari, 34 tahun, apoteker, ingin dimaafkan adiknya, takut ditinggalkan" },
+    cast: { id: "cast", label: "Tokoh pendukung & antagonis", weight: 1, test: (p) => S.cast.test(p),
+      question: "Siapa tokoh pendukung dan lawan (antagonis) yang penting?",
+      why: "Novel butuh pemeran yang saling menekan; antagonis yang kuat membuat taruhan terasa nyata.",
+      options: ["Antagonis manusia dengan motif yang masuk akal", "Lawan berupa keadaan / sistem / alam", "Sahabat yang ternyata berkhianat", "Biarkan AI merancang pemerannya"],
+      placeholder: "cth: Bram, kakak ipar yang terlalu baik; Inspektur Lena yang curiga" },
+    setting_story: { id: "setting_story", label: "Latar waktu & tempat", weight: 2, test: (p) => S.when_where.test(p),
+      question: "Di mana dan kapan cerita berlangsung? Kalau dunia rekaan, apa aturan uniknya?",
+      why: "Latar yang spesifik memberi detail sensorik dan budaya yang membuat cerita terasa nyata, bukan generik.",
+      options: ["Kota besar Indonesia masa kini", "Desa / kota kecil di Indonesia", "Indonesia masa lalu (sebutkan era)", "Dunia rekaan dengan aturan sendiri", "Masa depan / luar angkasa"],
+      placeholder: "cth: Pasar Klewer, Solo, 1998, menjelang kerusuhan" },
+    pov: { id: "pov", label: "Sudut pandang & tense", weight: 2, test: (p) => S.pov.test(p),
+      question: "Dari sudut pandang siapa cerita diceritakan?",
+      why: "Sudut pandang mengatur seberapa dekat pembaca dengan pikiran tokoh dan informasi apa yang bisa disembunyikan.",
+      options: ["Orang pertama (aku)", "Orang ketiga terbatas (dekat satu tokoh)", "Orang ketiga serba tahu", "Bergantian antara beberapa tokoh", "Orang kedua (kamu), eksperimental"],
+      placeholder: "cth: orang pertama, narator yang tidak sepenuhnya jujur" },
+    tone_story: { id: "tone_story", label: "Nada & suasana", weight: 1, test: (p) => S.tone.test(p),
+      question: "Suasana dan emosi apa yang ingin dirasakan pembaca?",
+      why: "Nada yang konsisten membuat pilihan kata, ritme kalimat, dan humor selaras di seluruh cerita.",
+      options: ["Gelap & menegangkan", "Hangat & menyentuh", "Lucu & ringan", "Melankolis & puitis", "Epik & megah", "Mencekam & atmosferik"],
+      placeholder: "cth: sunyi dan getir, dengan humor kering" },
+    audience_story: { id: "audience_story", label: "Target pembaca", weight: 2, test: (p) => S.audience.test(p) || K.audience.test(p),
+      question: "Untuk siapa cerita ini ditulis?",
+      why: "Usia pembaca menentukan kosakata, panjang kalimat, tema yang pantas, dan tingkat kekerasan.",
+      options: ["Anak 6-12 tahun", "Remaja (13-17)", "Dewasa muda", "Dewasa umum", "Pembaca sastra"],
+      placeholder: "cth: pembaca dewasa muda penggemar web novel" },
+    length_short: { id: "length_short", label: "Panjang cerpen", weight: 2, test: (p) => S.length.test(p),
+      question: "Seberapa panjang cerpennya?",
+      why: "Panjang menentukan jumlah adegan dan tokoh. Cerpen pendek butuh satu konflik yang padat.",
+      options: ["Flash fiction (maks 1.000 kata)", "Cerpen standar 1.500-3.000 kata", "Cerpen panjang 4.000-7.500 kata"],
+      placeholder: "cth: sekitar 2.000 kata, cocok untuk dimuat di koran" },
+    length_novel: { id: "length_novel", label: "Panjang & jumlah bab", weight: 2, test: (p) => S.length.test(p),
+      question: "Seberapa panjang novelnya dan berapa bab?",
+      why: "Jumlah bab menentukan kerangka, kecepatan alur, dan berapa banyak subplot yang muat.",
+      options: ["Novela 20-40 ribu kata, 10-12 bab", "Novel 60-90 ribu kata, 20-25 bab", "Web novel / serial, bab 1.500-2.500 kata", "Hanya kerangka dulu, tulis bertahap"],
+      placeholder: "cth: 15 bab, masing-masing 3.000 kata" },
+    structure: { id: "structure", label: "Struktur alur", weight: 1, test: (p) => S.structure.test(p),
+      question: "Struktur alur apa yang ingin dipakai?",
+      why: "Struktur memberi kerangka beat yang teruji, sehingga cerita tidak kehilangan arah di tengah.",
+      options: ["Tiga babak klasik", "Hero's journey", "Save the Cat beat sheet", "Kishōtenketsu (tanpa konflik frontal)", "In medias res dengan kilas balik", "Biarkan AI memilih"],
+      placeholder: "cth: tiga babak, dibuka dengan kejadian di tengah" },
+    style_story: { id: "style_story", label: "Gaya bahasa", weight: 1, test: (p) => S.style.test(p),
+      question: "Gaya bahasa seperti apa yang kamu suka?",
+      why: "Arahan gaya mencegah prosa AI yang datar, berbunga-bunga, dan penuh klise.",
+      options: ["Prosa lugas & sinematik", "Puitis & kaya metafora", "Cepat, banyak dialog", "Sastra Indonesia yang tenang dan dalam", "Gaya web novel populer"],
+      placeholder: "cth: kalimat pendek saat tegang, deskripsi indrawi, dialog penuh subteks" },
+    theme: { id: "theme", label: "Tema / pesan", weight: 1, test: (p) => S.theme.test(p),
+      question: "Tema atau pertanyaan besar apa yang ingin dijelajahi cerita ini?",
+      why: "Tema memberi makna pada kejadian dan membantu memilih adegan mana yang penting.",
+      options: ["Kehilangan & merelakan", "Identitas & jati diri", "Keluarga & warisan luka", "Ambisi & harga yang dibayar", "Persahabatan & kesetiaan", "Keadilan & balas dendam"],
+      placeholder: "cth: apakah memaafkan berarti melupakan?" },
+    ending: { id: "ending", label: "Jenis akhir", weight: 1, test: (p) => S.ending.test(p),
+      question: "Akhir seperti apa yang kamu inginkan?",
+      why: "Mengetahui akhir sejak awal membuat model menanam petunjuk dan membangun ke arah yang tepat.",
+      options: ["Bahagia yang diperjuangkan", "Pahit-manis", "Tragis", "Twist mengejutkan tapi masuk akal", "Terbuka / ambigu"],
+      placeholder: "cth: tokoh menang, tapi kehilangan sesuatu yang penting" },
+    avoid_story: { id: "avoid_story", label: "Hal yang dihindari", weight: 1, test: (p) => K.negative.test(p),
+      question: "Ada konten atau klise yang harus dihindari?",
+      why: "Batasan yang jelas menjaga cerita sesuai pembaca dan menghindari klise khas AI.",
+      options: ["Tanpa kekerasan eksplisit", "Tanpa konten dewasa", "Tanpa kata kasar", "Hindari klise (mimpi ternyata, deus ex machina)", "Tidak ada batasan khusus"],
+      placeholder: "cth: jangan ada adegan 'ternyata semua hanya mimpi'" },
+    language_story: { id: "language_story", label: "Bahasa naskah", weight: 1, test: (p) => K.language.test(p),
+      question: "Naskah ditulis dalam bahasa apa?",
+      why: "Menentukan bahasa narasi dan dialog sejak awal mencegah campur bahasa yang tidak disengaja.",
+      options: ["Bahasa Indonesia baku tapi luwes", "Bahasa Indonesia santai / gaul", "Indonesia dengan dialog bahasa daerah", "English"],
+      placeholder: "cth: narasi baku, dialog pakai logat Jawa Timur" },
+    // ---- asisten / Gem / system instruction
+    purpose: { id: "purpose", label: "Tujuan & pengguna asisten", weight: 3, test: (p) => (K.goal.test(p) || K.audience.test(p)) && wc(p) >= 10,
+      question: "Asisten ini dibuat untuk apa, dan siapa yang akan memakainya?",
+      why: "Tujuan dan pengguna menentukan semua aturan lain: bahasa, kedalaman, dan batasan.",
+      options: ["Layanan pelanggan bisnis", "Tutor / pendamping belajar", "Asisten kerja pribadi", "Asisten penulis konten", "Asisten teknis / coding"],
+      placeholder: "cth: menjawab pertanyaan pelanggan toko laptop lewat WhatsApp" },
+    scope: { id: "scope", label: "Ruang lingkup (boleh / tidak)", weight: 2, test: (p) => K.constraints.test(p),
+      question: "Apa saja yang BOLEH dan TIDAK BOLEH dilakukan asisten ini?",
+      why: "Batas yang tegas mencegah asisten menjanjikan hal yang salah atau keluar topik.",
+      options: ["Hanya topik bisnis/produk ini", "Boleh topik umum, tapi utamakan tugas inti", "Tidak boleh memberi harga/janji di luar data", "Tidak boleh memberi nasihat medis/hukum/keuangan"],
+      placeholder: "cth: tidak boleh memberi diskon, tidak boleh membahas kompetitor" },
+    knowledge: { id: "knowledge", label: "Pengetahuan & sumber", weight: 2,
+      test: (p) => /dokumen|document|knowledge|pengetahuan|data|faq|sop|kebijakan|policy|katalog|catalog|produk|product|harga|price/i.test(p),
+      question: "Informasi apa yang harus diketahui asisten? (produk, harga, FAQ, kebijakan, dokumen)",
+      why: "Asisten hanya sebaik informasi yang diberikan. Tanpa data, ia akan mengarang.",
+      options: ["Saya akan tempel FAQ / katalog / SOP", "Saya unggah dokumen ke Gem / AI Studio", "Cukup pengetahuan umum model", "Akan terhubung ke data lain nanti"],
+      placeholder: "cth: daftar 30 produk dengan harga, kebijakan retur 7 hari" },
+    workflow: { id: "workflow", label: "Alur percakapan", weight: 1, test: (p) => /alur|langkah|steps?|flow|pertama|kemudian|lalu|first|then/i.test(p),
+      question: "Bagaimana alur percakapan yang ideal?",
+      why: "Alur yang jelas membuat asisten bertanya dulu sebelum menjawab dan selalu mengarah ke hasil.",
+      options: ["Sapa → tanya kebutuhan → rekomendasi → tawarkan langkah lanjut", "Langsung jawab, singkat", "Tanya level pengguna dulu, lalu jelaskan bertahap", "Kumpulkan data (nama, kebutuhan) lalu rangkum"],
+      placeholder: "cth: tanya budget dan kebutuhan, beri 3 rekomendasi, arahkan ke WhatsApp" },
+    edge: { id: "edge", label: "Kasus khusus", weight: 1, test: (p) => /di luar|out of scope|tidak tahu|don'?t know|eskalasi|escalat|tolak|refuse|marah|komplain|complain/i.test(p),
+      question: "Apa yang harus dilakukan asisten jika ditanya di luar topik, tidak tahu jawabannya, atau pengguna marah?",
+      why: "Kasus khusus adalah tempat asisten paling sering gagal; aturan eksplisit mencegahnya.",
+      options: ["Jujur bilang tidak tahu, arahkan ke manusia", "Tolak sopan dan kembalikan ke topik", "Minta maaf, rangkum masalah, eskalasi"],
+      placeholder: "cth: kalau komplain, minta nomor pesanan lalu arahkan ke admin" },
+  });
+
   const PLATFORMS = {
     veo: {
       id: "veo",
@@ -676,8 +811,73 @@ window.PI_PLATFORMS = (() => {
     },
   };
 
-  // Urutan tampil
-  const ORDER = ["veo", "vids", "image", "gemini", "omni"];
+  // -----------------------------------------------------------
+  // PROFIL CERITA & ASISTEN
+  // -----------------------------------------------------------
+  const STORY_GUIDE = [
+    "Cerita butuh tokoh yang MENGINGINKAN sesuatu dan RINTANGAN yang nyata. Tulis keduanya di prompt.",
+    "Beri story bible: nama, usia, keinginan, ketakutan, kelemahan, dan cara bicara tiap tokoh, serta aturan dunia.",
+    "Tentukan sudut pandang, tense, panjang, dan jenis akhir sejak awal agar model menanam petunjuk ke arah yang benar.",
+    "Minta 'show, don't tell': emosi lewat aksi, detail indrawi, dan subteks dialog, bukan penjelasan.",
+    "Sebutkan klise yang dilarang (semua hanya mimpi, deus ex machina, tokoh menjelaskan perasaannya panjang lebar).",
+    "Untuk karya panjang, kerjakan bertahap: story bible → kerangka → satu bab per permintaan, dengan ringkasan bab sebelumnya.",
+    "Di AI Studio, taruh story bible dan aturan menulis di System Instruction agar konsisten sepanjang sesi.",
+    "Naikkan temperature (sekitar 1.0) untuk prosa yang lebih segar; turunkan untuk kerangka yang rapi.",
+  ];
 
-  return { PLATFORMS, ORDER, K, D, wc };
+  Object.assign(PLATFORMS, {
+    cerpen: {
+      id: "cerpen", section: "story", name: "Cerpen", short: "Cerita pendek", icon: "📝",
+      desc: "Prompt untuk menulis cerita pendek utuh di Gemini / AI Studio (atau model teks lain), lengkap dengan story bible dan beat sheet.",
+      outputLang: "id",
+      dims: [D.genre, D.premise, D.protagonist, D.setting_story, D.pov, D.length_short, D.tone_story, D.ending, D.audience_story, D.style_story, D.theme, D.avoid_story, D.language_story],
+      settings: { aspect: [], duration: [], extra: ["Tulis cerpen utuh", "Kerangka dulu, lalu tulis", "Beberapa versi pembuka"] },
+      guide: STORY_GUIDE,
+      examples: ["cerpen horor tentang rumah nenek di desa", "cerita tentang anak yang kehilangan kucingnya", "cerpen misteri di kereta malam Jakarta-Surabaya", "kisah cinta dua orang yang bertemu di stasiun"],
+    },
+    novel: {
+      id: "novel", section: "story", name: "Novel", short: "Story bible + bab", icon: "📚",
+      desc: "Rancang novel atau web novel: story bible, kerangka per bab, dan prompt siap tempel untuk menulis setiap bab secara konsisten.",
+      outputLang: "id",
+      dims: [D.genre, D.premise, D.protagonist, D.cast, D.setting_story, D.pov, D.length_novel, D.structure, D.audience_story, D.tone_story, D.style_story, D.theme, D.ending, D.avoid_story, D.language_story],
+      settings: { aspect: [], duration: [], extra: ["Story bible + kerangka bab", "Tulis bab tertentu", "Lanjutkan / revisi naskah saya"] },
+      guide: STORY_GUIDE,
+      examples: ["novel fantasi tentang kerajaan di atas awan", "web novel romansa kantor di Jakarta", "novel thriller tentang jurnalis yang menyelidiki kasus lama", "novel remaja tentang klub sains SMA"],
+    },
+    assistant: {
+      id: "assistant", section: "general", name: "Asisten / Gem", short: "System instruction", icon: "🤖",
+      desc: "Bangun instruksi untuk asisten khusus: Gemini Gem, System Instruction di AI Studio, custom GPT, atau chatbot bisnis.",
+      outputLang: "id",
+      dims: [D.purpose, D.role, D.scope, D.knowledge, D.workflow, D.tone, D.format, D.edge, D.examples, D.language],
+      settings: { aspect: [], duration: [], extra: ["Gemini Gem", "AI Studio System Instruction", "Chatbot / custom GPT"] },
+      guide: [
+        "Instruksi asisten adalah 'job description': identitas, tujuan, pengguna, ruang lingkup, sumber pengetahuan, alur, gaya, dan kasus khusus.",
+        "Tulis apa yang HARUS dilakukan, lalu batasannya. Larangan tanpa alternatif membuat asisten kaku.",
+        "Sertakan data nyata (FAQ, harga, kebijakan) atau unggah sebagai file. Tanpa data, asisten mengarang.",
+        "Atur perilaku saat tidak tahu: jujur, tanya balik, atau arahkan ke manusia.",
+        "Satu atau dua contoh percakapan ideal sangat efektif menetapkan gaya.",
+        "Uji dengan pertanyaan sulit: di luar topik, pengguna marah, permintaan diskon, informasi yang tidak ada.",
+      ],
+      examples: ["chatbot CS untuk toko laptop saya", "Gem tutor matematika SMP", "asisten untuk merangkum rapat dan membuat to-do", "asisten admin klinik gigi via WhatsApp"],
+    },
+  });
+
+  // Penanda bagian untuk profil lama
+  PLATFORMS.veo.section = PLATFORMS.vids.section = PLATFORMS.image.section = PLATFORMS.omni.section = "video";
+  PLATFORMS.gemini.section = "general";
+  PLATFORMS.gemini.name = "Tugas umum";
+  PLATFORMS.gemini.short = "Gemini / AI Studio / chat";
+  PLATFORMS.gemini.desc = "Prompt teks biasa untuk Gemini, AI Studio, atau chatbot lain: menulis, analisis, belajar, rencana, coding, dan tugas sehari-hari.";
+
+  // Tiga bagian utama
+  const SECTIONS = [
+    { id: "video", icon: "🎬", name: "Video & Visual", desc: "Veo / Flow, Google Vids, gambar untuk frame & ingredient, multimodal", platforms: ["veo", "vids", "image", "omni"] },
+    { id: "story", icon: "📖", name: "Novel & Cerpen", desc: "Cerita pendek dan novel dengan story bible, kerangka, dan prompt per bab", platforms: ["cerpen", "novel"] },
+    { id: "general", icon: "💬", name: "Prompt Umum", desc: "Tugas sehari-hari dan asisten khusus (Gem / system instruction)", platforms: ["gemini", "assistant"] },
+  ];
+
+  // Urutan tampil
+  const ORDER = SECTIONS.flatMap((s) => s.platforms);
+
+  return { PLATFORMS, ORDER, SECTIONS, K, D, wc };
 })();

@@ -69,11 +69,11 @@ window.PI_AI = (() => {
 
   const textOf = (j) => (j.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought && typeof p.text === "string").map((p) => p.text).join("");
 
-  async function callJSON(system, user, { temperature = 0.6, model, image } = {}) {
+  async function callJSON(system, user, { temperature = 0.6, model, image, maxTokens = 12288 } = {}) {
     const j = await post(model || getModel(), {
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: "user", parts: userParts(user, image) }],
-      generationConfig: { temperature, responseMimeType: "application/json", maxOutputTokens: 8192 },
+      generationConfig: { temperature, responseMimeType: "application/json", maxOutputTokens: maxTokens },
     });
     const text = textOf(j);
     if (!text) throw new Error("Model tidak mengembalikan teks (finishReason: " + (j.candidates?.[0]?.finishReason || "?") + ").");
@@ -101,6 +101,7 @@ window.PI_AI = (() => {
       : "A REFERENCE IMAGE is attached. Extract the subject's exact look, wardrobe, setting and palette from it and write them into the prompt so the video matches it.";
     if (platformId === "image") return "A REFERENCE IMAGE is attached. If the user wants an edit, write a conversational Nano Banana edit instruction stating exactly what to keep and what to change. Otherwise use it as a style/subject reference and describe the relevant traits explicitly.";
     if (platformId === "omni") return "A REFERENCE IMAGE is attached. State explicitly which traits to keep and which to change.";
+    if (platformId === "cerpen" || platformId === "novel") return "A REFERENCE IMAGE is attached as visual inspiration (character, place or mood). Weave its concrete details into the story bible and scenes.";
     return "A REFERENCE IMAGE is attached. Use what is visible in it as factual context for the task.";
   };
 
@@ -168,7 +169,7 @@ Return ONLY JSON:
 ${platformBrief(pf)}
 ${opts.image ? "\n" + imageBrief(platformId, opts.mode) + "\n" : ""}
 WRITING RULES:
-- Main prompt language: ${langName}. ${platformId === "gemini" || platformId === "vids" ? "" : "Visual prompts work best in English; keep any dialogue in the language the user implied and say so (e.g. 'speaking in Indonesian')."}
+- Main prompt language: ${langName}. ${["gemini", "vids", "cerpen", "novel", "assistant"].includes(platformId) ? "" : "Visual prompts work best in English; keep any dialogue in the language the user implied and say so (e.g. 'speaking in Indonesian')."}
 - Be specific and sensory; replace vague words (beautiful, nice, cool) with concrete visual/technical descriptors.
 - Keep everything the user explicitly asked for. Fill gaps with strong, coherent creative choices — never with placeholders like [insert].
 - Where the user skipped a question, choose the option that best serves the intent and keep it consistent with everything else.
@@ -178,6 +179,9 @@ WRITING RULES:
 - ${platformId === "image" ? "Structure: subject + details, pose/action, setting, composition, lighting, color palette, style/medium, camera/lens if photographic, quality terms, aspect ratio." : ""}
 - ${platformId === "gemini" ? "Structure the prompt with clear sections: ROLE, CONTEXT, TASK, RULES, OUTPUT FORMAT, EXAMPLES (if any), QUALITY BAR with a self-check instruction. Also produce a concise 'system' instruction suitable for AI Studio's System Instruction field." : ""}
 - ${platformId === "omni" ? "Open with the output modality. Use labeled blocks (OUTPUT / SUBJECT / REFERENCE HANDLING / STYLE / CONSTRAINTS / AVOID)." : ""}
+- ${platformId === "cerpen" ? `This is a SHORT STORY prompt. Write the super prompt in ${langName} with sections: PERAN (a novelist persona fitted to the genre), IDE CERITA, STORY BIBLE (protagonist with name, age, want, fear, flaw and distinctive voice; other key characters; a sensory, specific setting; POV and tense; tone; theme; intended ending), STRUKTUR (a beat sheet of 5-8 beats sized to the requested length, using the requested structure), ATURAN MENULIS (show-don't-tell, concrete sensory detail, dialogue with subtext, every scene changes something, an explicit list of banned AI clichés, content limits, length, reader age, language), OUTPUT (follow the selected mode: full story / outline first then wait / three alternative openings). Also return "storyBible" (same bible as plain text), "outline" (the beats as [{n,title,summary}]) and "system" (a System Instruction for an AI Studio fiction session holding the bible and rules). Make creative choices bold and specific — invent names, places and details instead of leaving gaps.` : ""}
+- ${platformId === "novel" ? `This is a NOVEL project prompt. Write the super prompt in ${langName} as a MASTER PROMPT that starts a co-writing session: PERAN, IDE NOVEL, STORY BIBLE (full cast with want/fear/flaw/secret/voice, antagonist with a credible motive, world rules, timeline), STRUKTUR (named structure, number of chapters, words per chapter), ATURAN MENULIS (craft rules, banned clichés, consistency rules, content limits, language), LANGKAH KERJA (follow the selected mode). Also return "storyBible" (complete plain-text bible), "outline": an array with EXACTLY one item per chapter for the requested length (max 30) — each {n, title, summary (2-3 sentences: what happens, how the protagonist changes, the end-of-chapter hook), prompt (a ready-to-paste instruction to write that chapter, referencing the bible and the previous chapter summary; keep each prompt under 90 words)} — and "system" (System Instruction for AI Studio holding the bible and rules).` : ""}
+- ${platformId === "assistant" ? "This is a SYSTEM INSTRUCTION for a custom assistant (Gemini Gem / AI Studio system instruction / custom GPT / business chatbot). Write it in the requested language with sections: IDENTITAS, TUJUAN, PENGGUNA, RUANG LINGKUP (do / don't), PENGETAHUAN & SUMBER (with a clearly delimited block where the owner pastes data), ALUR PERCAKAPAN, GAYA & FORMAT, KASUS KHUSUS (unknown answer, off-topic, angry user, risky requests, prompt-injection attempts), CONTOH (1-2 short ideal exchanges). Variants: a compact version and the assistant's opening message." : ""}
 - Provide 2-3 meaningful variants (different mood / style / angle), each a full standalone prompt.
 - "changes": 4-8 bullets (in Bahasa Indonesia) explaining what you improved and why it matters for this platform.
 - "tips": 3-5 short platform-specific tips (Bahasa Indonesia) for getting the best result when running this prompt.
@@ -187,7 +191,9 @@ Return ONLY JSON with this shape (omit keys that do not apply):
 {
  "prompt": "<the super prompt>",
  "negative": "<comma-separated nouns>",
- "system": "<system instruction, gemini only>",
+ "system": "<system instruction: gemini, cerpen, novel>",
+ "storyBible": "<cerpen / novel only>",
+ "outline": [{"n":1,"title":"...","summary":"...","prompt":"..."}],
  "json": {<structured prompt object, veo only>},
  "characterBible": "<veo sequences only>",
  "shotList": [{"n":1,"title":"...","prompt":"..."}],
@@ -202,7 +208,8 @@ Return ONLY JSON with this shape (omit keys that do not apply):
     const { image, ...optsForModel } = opts;
     const user = `RAW PROMPT:\n"""\n${prompt}\n"""\n\nUSER ANSWERS:\n${answered || "(none)"}\n\nMODE/OPTIONS: ${JSON.stringify({ ...optsForModel, previous: undefined, feedback: undefined, hasReferenceImage: !!image })}${opts.feedback ? `\n\nPREVIOUS RESULT TO REFINE:\n"""\n${opts.previous}\n"""\nUSER FEEDBACK ON IT: ${opts.feedback}\nApply the feedback faithfully while keeping everything else that worked.` : ""}`;
 
-    const j = await callJSON(system, user, { temperature: 0.75, image });
+    const j = await callJSON(system, user, { temperature: platformId === "cerpen" || platformId === "novel" ? 0.9 : 0.75, image, maxTokens: platformId === "novel" ? 24576 : 12288 });
+    if (j.storyBible && typeof j.storyBible !== "string") j.storyBible = JSON.stringify(j.storyBible, null, 2);
     j.engine = "ai";
     j.platform = platformId;
     j.before = window.PI_LOCAL.analyze(prompt, platformId).score;

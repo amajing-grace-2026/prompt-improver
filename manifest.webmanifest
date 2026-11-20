@@ -1,7 +1,7 @@
 {
-  "name": "Prompt Improver — Super Prompt untuk Veo, Flow, Vids, Imagen & AI Studio",
+  "name": "Prompt Improver — Super Prompt untuk Video, Cerita & Prompt Umum",
   "short_name": "Prompt Improver",
-  "description": "Ubah prompt biasa jadi super prompt untuk Google Flow (Veo), Google Vids, Imagen / Nano Banana, Gemini di AI Studio, dan model multimodal.",
+  "description": "Ubah prompt biasa jadi super prompt untuk video (Flow, Veo, Vids), novel & cerpen, dan prompt umum di Gemini / AI Studio.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
