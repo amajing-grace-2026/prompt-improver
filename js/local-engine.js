@@ -257,6 +257,13 @@ window.PI_LOCAL = (() => {
       const audio = ans(a, "audio"), mood = ans(a, "mood"), fmt = ans(a, "format_video"), neg = ans(a, "negative");
       const aspect = /9:16|vertikal|vertical|reels|tiktok|shorts/i.test(fmt) ? "9:16" : "16:9";
 
+      // Durasi: <= 8 detik satu aksi; 10-15 detik (Omni Flash) memakai timeline bertanda waktu
+      const dur = Math.max(3, Math.min(15, +opts.duration || 8));
+      const long = dur >= 10;
+      const cut1 = Math.round(dur / 3), cut2 = Math.round((dur * 2) / 3);
+      const timeline = long
+        ? sentence(`Timeline: [0-${cut1}s] ${subject ? "the subject is introduced in the environment" : "the scene is established"}; [${cut1}-${cut2}s] ${action ? "the subject " + action : "the main action unfolds"}; [${cut2}-${dur}s] a clear payoff, a reaction or the result of the action, as the camera settles`)
+        : "";
       // Kalimat inti: [kamera] of [subjek] [aksi] [in setting]
       const core = join([
         camera || "Cinematic medium shot, slow push-in",
@@ -270,8 +277,9 @@ window.PI_LOCAL = (() => {
         subject ? sentence("Scene concept: " + raw) : "",
         light ? sentence("Lighting: " + light) : "",
         sentence("Visual style: " + (style || "cinematic, photorealistic, shallow depth of field, natural color grading") + (mood ? ". Mood: " + mood : "")),
+        timeline,
         sentence("Audio: " + (audio || "natural ambient sound matching the scene, subtle sound effects, no music")),
-        "Aspect ratio " + aspect + ", 8 seconds, smooth realistic motion, consistent character and lighting throughout.",
+        "Aspect ratio " + aspect + ", " + dur + " seconds" + (long ? ", one continuous take with a clear beginning, middle and end" : "") + ", smooth realistic motion, consistent character and lighting throughout.",
       ], " ");
 
       const negative = join([neg, "subtitles, captions, on-screen text, watermark, logo, distorted faces, extra limbs, flickering, morphing, jittery camera"], ", ");
@@ -289,18 +297,19 @@ window.PI_LOCAL = (() => {
         ["Closing", "Slow pull-back to a wide shot,", "the moment resolves and the scene settles"],
       ];
       const order = clips === 1 ? [0, 1, 2] : clips === 2 ? [0, 1] : clips === 3 ? [0, 1, 2] : clips === 4 ? [0, 1, 3, 4] : [0, 1, 2, 3, 4];
+      const base = timeline ? prompt.replace(" " + timeline, "") : prompt;
       const shotList = order.map((k, i) => {
         const [title, shot, beat] = SHOTS[k];
         const p = clips > 1
-          ? join([shot.replace(/,$/, "") + ":", beat + ".", characterBible, prompt.replace(/^.*?\bof\b[^.]*\./, "").trim(), i > 0 ? "Audio continues naturally from the previous clip." : ""])
-          : prompt.replace(/^.*?\bof\b/, shot.replace(/,$/, "") + " of");
+          ? join([shot.replace(/,$/, "") + ":", beat + ".", characterBible, base.replace(/^.*?\bof\b[^.]*\./, "").trim(), i > 0 ? "Audio continues naturally from the previous clip." : ""])
+          : base.replace(/^.*?\bof\b/, shot.replace(/,$/, "") + " of");
         return { n: i + 1, title, prompt: p };
       });
 
       return {
         prompt,
         negative,
-        settings: { aspect, duration: "8s", mode: opts.mode || "Text-to-Video", clips: clips > 1 ? clips + " klip" : "" },
+        settings: { aspect, duration: dur + "s", model: long ? "Gemini Omni Flash 1.2 (Flow)" : "Omni Flash 1.2 atau Veo 3.1 Lite", mode: opts.mode || "Text-to-Video", clips: clips > 1 ? clips + " klip" : "" },
         characterBible,
         json: {
           shot: camera || "cinematic medium shot, slow push-in",
@@ -313,7 +322,8 @@ window.PI_LOCAL = (() => {
           audio: audio || "natural ambient sound, no music",
           negative_prompt: negative,
           aspect_ratio: aspect,
-          duration_seconds: 8,
+          duration_seconds: dur,
+          ...(long ? { timeline } : {}),
         },
         variants: [
           { label: "Lebih dramatis", prompt: prompt.replace(/Visual style:[^.]*\./, "Visual style: high-contrast cinematic, dramatic low-key lighting, anamorphic lens flares, teal-and-orange grade.") },
@@ -325,7 +335,7 @@ window.PI_LOCAL = (() => {
           "Memisahkan subjek, aksi, latar, cahaya, gaya, dan audio ke kalimat terstruktur.",
           "Mendeskripsikan audio secara eksplisit agar Veo tidak menebak.",
           "Memindahkan larangan ke negative prompt dalam bentuk kata benda.",
-          "Menetapkan aspect ratio dan durasi 8 detik.",
+          long ? `Menetapkan durasi ${dur} detik dengan timeline bertanda waktu, agar klip panjang punya awal, tengah, dan akhir yang jelas.` : `Menetapkan aspect ratio dan durasi ${dur} detik.`,
         ],
         tips: PLATFORMS.veo.guide.slice(0, 4),
       };

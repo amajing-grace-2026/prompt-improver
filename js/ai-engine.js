@@ -153,6 +153,10 @@ Return ONLY JSON:
     const outLang = opts.outputLang || pf.outputLang;
     const langName = { en: "English", id: "Bahasa Indonesia", both: "English, followed by a Bahasa Indonesia translation" }[outLang] || "English";
     const clips = Math.max(1, Math.min(5, +opts.clips || 1));
+    const dur = Math.max(3, Math.min(15, +opts.duration || 8));
+    const durRule = dur > 8
+      ? ` Each clip is ${dur} seconds, which needs the Gemini Omni Flash 1.2 model in Google Flow (3-15 s; free accounts max 10 s, Google AI Plus / Pro / Ultra up to 15 s); Veo 3.1 stops at 8 s. Use the extra time well: write a timestamped beat timeline inside the prompt (e.g. "[0-5s] ... [5-10s] ... [10-${dur}s] ...") with 2-3 connected beats in one continuous take or at most one cut, so the clip neither stalls nor rushes. Put "duration": "${dur}s" and "model": "Gemini Omni Flash 1.2" in settings.`
+      : ` Each clip is ${dur} seconds (works with Veo 3.1 and Omni Flash in Flow); keep exactly one clear action that fits that length.`;
     const answered = Object.entries(answers || {})
       .map(([id, a]) => {
         if (!a || a.skipped) return `- ${id}: (user skipped — decide the best creative choice yourself and make it excellent)`;
@@ -161,8 +165,8 @@ Return ONLY JSON:
       .join("\n");
 
     const veoRule = clips > 1
-      ? `The user wants a SEQUENCE of exactly ${clips} consecutive 8-second clips that tell one continuous mini-story (setup → development → payoff). Write a "characterBible": one dense paragraph that fixes every recurring character's age, face, hair, body, wardrobe and colors, plus the location and lighting look; then a "shotList" of exactly ${clips} items, each a complete standalone Veo prompt that repeats the character bible VERBATIM, has one clear action, its own shot type and camera move, and audio that continues naturally from the previous clip. The main "prompt" field = shot 1.`
-      : "One clear action per 8-second clip. Include shot type + camera movement, subject details, action, setting, lighting, style, explicit audio (ambience / SFX / dialogue in quotes with speaker / music or 'no music'). Also produce a structured JSON version of the prompt and an optional 3-shot list (establishing / main / detail) with an identical character description in every shot.";
+      ? `The user wants a SEQUENCE of exactly ${clips} consecutive ${dur}-second clips that tell one continuous mini-story (setup → development → payoff). Write a "characterBible": one dense paragraph that fixes every recurring character's age, face, hair, body, wardrobe and colors, plus the location and lighting look; then a "shotList" of exactly ${clips} items, each a complete standalone Veo prompt that repeats the character bible VERBATIM, has one clear action, its own shot type and camera move, and audio that continues naturally from the previous clip. The main "prompt" field = shot 1.${durRule}`
+      : `${dur > 8 ? "A timestamped beat timeline." : "One clear action."} Include shot type + camera movement, subject details, action, setting, lighting, style, explicit audio (ambience / SFX / dialogue in quotes with speaker / music or 'no music'). Also produce a structured JSON version of the prompt and an optional 3-shot list (establishing / main / detail) with an identical character description in every shot.${durRule}`;
 
     const system = `You are a world-class prompt engineer and creative director for Google's generative AI tools. Transform the user's raw prompt plus their answers into a SUPER PROMPT that is precise, vivid, technically correct for the platform, and produces far better output than the original.
 
@@ -199,7 +203,7 @@ Return ONLY JSON with this shape (omit keys that do not apply):
  "shotList": [{"n":1,"title":"...","prompt":"..."}],
  "storyboard": [{"n":1,"title":"...","narration":"...","onScreenText":"...","visual":"..."}],
  "variants": [{"label":"...","prompt":"..."}],
- "settings": {"aspect":"16:9","duration":"8s","mode":"..."},
+ "settings": {"aspect":"16:9","duration":"${platformId === "veo" ? dur + "s" : "8s"}","mode":"..."},
  "changes": ["..."],
  "tips": ["..."],
  "after": <int 0-100 your honest completeness score of the new prompt>

@@ -33,6 +33,7 @@
     result: null,
     activeTab: "prompt",
     clips: 1,
+    duration: [4, 6, 8, 10, 12, 15].includes(+localStorage.getItem("pi_duration")) ? +localStorage.getItem("pi_duration") : 8,
     image: null, // {mime, data, name, preview}
     preset: null,
   };
@@ -111,6 +112,7 @@
     state.preset = null;
     renderPresets();
     $("#clipsField").classList.toggle("hidden", id !== "veo");
+    $("#durationField").classList.toggle("hidden", id !== "veo");
   }
   function renderModes() {
     const p = PLATFORMS[state.platform];
@@ -135,10 +137,28 @@
   $("#modeSelect").addEventListener("change", (e) => (state.mode = e.target.value));
   $("#langSelect").addEventListener("change", (e) => (state.outputLang = e.target.value));
 
+  // Jika prompt menyebut durasi (mis. "15 detik"), samakan pilihan Durasi per klip
+  function syncDurationFromPrompt() {
+    if (state.platform !== "veo") return;
+    const m = state.raw.match(/(\d{1,2})\s?(?:detik|dtk|sec|secs|seconds?|s)\b/i);
+    const n = m ? +m[1] : 0;
+    if (n < 3 || n > 15) return;
+    const pick = [4, 6, 8, 10, 12, 15].reduce((b, o) => (Math.abs(o - n) < Math.abs(b - n) ? o : b), 8);
+    if (pick === state.duration) return;
+    setDuration(pick);
+    toast(`Durasi per klip diatur ke ${pick} detik sesuai prompt.`);
+  }
+  function setDuration(n) {
+    state.duration = n;
+    $("#durationSelect").value = n;
+    try { localStorage.setItem("pi_duration", n); } catch {}
+  }
+
   async function analyze() {
     const raw = $("#rawPrompt").value.trim();
     if (!raw) return toast("Tulis prompt dulu ya.");
     state.raw = raw;
+    syncDurationFromPrompt();
     state.answers = {};
     showLoading("Menganalisis prompt & menyusun pertanyaan…");
     try {
@@ -160,6 +180,7 @@
     const raw = $("#rawPrompt").value.trim();
     if (!raw) return toast("Tulis prompt dulu ya.");
     state.raw = raw;
+    syncDurationFromPrompt();
     state.analysis = LOCAL.analyze(raw, state.platform);
     state.answers = {};
     for (const q of state.analysis.questions) state.answers[q.id] = { skipped: true };
@@ -227,7 +248,7 @@
     showLoading(feedback ? "Memperbaiki super prompt sesuai masukanmu…" : "Menyusun super prompt…");
     try {
       const engine = activeEngine();
-      const opts = { mode: state.mode, outputLang: state.outputLang, clips: state.platform === "veo" ? state.clips : 1, image: state.image, preset: currentPreset()?.label || "" };
+      const opts = { mode: state.mode, outputLang: state.outputLang, clips: state.platform === "veo" ? state.clips : 1, duration: state.platform === "veo" ? state.duration : undefined, image: state.image, preset: currentPreset()?.label || "" };
       // Pertanyaan yang tidak disentuh dikirim sebagai "dilewati" agar model memutuskan sendiri
       const base = { ...state.answers };
       for (const q of state.analysis?.questions || []) if (!base[q.id]) base[q.id] = { skipped: true };
@@ -350,7 +371,7 @@
   function loadHistory() { try { return JSON.parse(localStorage.getItem("pi_history") || "[]"); } catch { return []; } }
   function saveHistory() {
     const h = loadHistory();
-    h.unshift({ t: Date.now(), platform: state.platform, raw: state.raw, answers: state.answers, analysis: state.analysis, result: state.result, mode: state.mode, outputLang: state.outputLang, clips: state.clips, preset: state.preset, hadImage: !!state.image });
+    h.unshift({ t: Date.now(), platform: state.platform, raw: state.raw, answers: state.answers, analysis: state.analysis, result: state.result, mode: state.mode, outputLang: state.outputLang, clips: state.clips, duration: state.duration, preset: state.preset, hadImage: !!state.image });
     localStorage.setItem("pi_history", JSON.stringify(h.slice(0, 40)));
   }
   function renderHistory() {
@@ -363,7 +384,7 @@
       if (!it) return;
       Object.assign(state, { platform: it.platform, raw: it.raw, answers: it.answers || {}, analysis: it.analysis, result: it.result, mode: it.mode || "", outputLang: it.outputLang || "en", activeTab: "prompt" });
       selectPlatform(it.platform);
-      state.preset = it.preset || null; state.clips = it.clips || 1; $("#clipsSelect").value = state.clips; renderPresets();
+      state.preset = it.preset || null; state.clips = it.clips || 1; $("#clipsSelect").value = state.clips; if (it.duration) setDuration(it.duration); renderPresets();
       $("#rawPrompt").value = it.raw; updateCount();
       if (it.analysis) { renderAnalysis(); renderQuestions(); }
       if (it.result) { renderResult(); goStep(3); } else goStep(1);
@@ -546,6 +567,8 @@
     if (f) { e.preventDefault(); loadImage(f); }
   });
   $("#clipsSelect").addEventListener("change", (e) => (state.clips = +e.target.value));
+  $("#durationSelect").value = state.duration;
+  $("#durationSelect").addEventListener("change", (e) => setDuration(+e.target.value));
 
   // ---------------- LAB: uji A/B & tes gambar ----------------
   function renderLab() {

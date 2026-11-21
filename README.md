@@ -46,7 +46,7 @@ Engine otomatis memilih AI jika key tersedia, dan jatuh ke Lokal jika gagal.
 
 ## Aturan platform yang ditanamkan
 
-- **Veo / Flow**: satu aksi per klip 8 detik; urutan shot → subjek → aksi → latar → cahaya → gaya → audio; dialog dalam tanda kutip dengan penutur; audio dideskripsikan eksplisit; larangan dipindah ke negative prompt sebagai kata benda (`subtitles, captions, text overlay`); character sheet identik antar klip.
+- **Veo / Flow**: pilihan durasi per klip 4-15 detik. Klip sampai 8 detik berisi satu aksi; klip 10-15 detik (model Gemini Omni Flash di Flow, akun gratis maks 10 detik, Google AI Plus / Pro / Ultra sampai 15 detik) memakai timeline bertanda waktu dengan 2-3 tahap; urutan shot → subjek → aksi → latar → cahaya → gaya → audio; dialog dalam tanda kutip dengan penutur; audio dideskripsikan eksplisit; larangan dipindah ke negative prompt sebagai kata benda (`subtitles, captions, text overlay`); character sheet identik antar klip.
 - **Google Vids**: brief "Help me create" berisi topik, audiens, durasi, nada, poin wajib, CTA; storyboard per adegan dengan narasi ≤ 20 kata dan teks layar ≤ 8 kata; klip AI mengikuti aturan Veo.
 - **Imagen / Nano Banana**: subjek + pose + latar + komposisi + cahaya + palet + gaya/medium + lensa + kualitas + aspect ratio; istilah fotografi nyata; instruksi edit percakapan untuk Nano Banana.
 - **Cerpen**: peran penulis sesuai genre, story bible (tokoh dengan keinginan, ketakutan, kelemahan, dan suara), latar indrawi, sudut pandang, beat sheet sesuai panjang, aturan anti-klise, dan mode output (cerita utuh, kerangka dulu, atau tiga versi pembuka).

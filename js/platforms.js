@@ -131,7 +131,7 @@ window.PI_PLATFORMS = (() => {
     action: {
       id: "action", label: "Aksi / gerakan", weight: 3,
       test: (p) => K.action.test(p),
-      question: "Apa yang terjadi atau dilakukan subjek selama klip? (Satu aksi jelas paling efektif untuk 8 detik.)",
+      question: "Apa yang terjadi atau dilakukan subjek selama klip? (Klip sampai 8 detik: satu aksi jelas. Klip 10-15 detik: boleh 2-3 tahap berurutan.)",
       why: "Veo menghasilkan gerakan paling bagus kalau ada satu aksi utama yang jelas dengan awal dan akhir.",
       options: [
         { label: "Berjalan / bergerak menuju kamera", value: "walks slowly toward the camera" },
@@ -230,13 +230,13 @@ window.PI_PLATFORMS = (() => {
       id: "format_video", label: "Format (aspect ratio & durasi)", weight: 1,
       test: (p) => K.aspect.test(p) || K.duration.test(p),
       question: "Untuk platform apa hasilnya? (menentukan aspect ratio)",
-      why: "Veo mendukung 16:9 dan 9:16; durasi klip Flow standar 8 detik, Vids juga 8 detik.",
+      why: "Aspect ratio menentukan framing. Di Flow, durasi klip diatur lewat pilihan 'Durasi per klip' (3-15 detik di Omni Flash, 4/6/8 detik di Veo 3.1).",
       options: [
         { label: "YouTube / layar lebar — 16:9", value: "16:9" },
         { label: "Reels / TikTok / Shorts — 9:16 vertikal", value: "9:16" },
         { label: "Belum tahu, pakai 16:9", value: "16:9" },
       ],
-      placeholder: "cth: 9:16, 8 detik",
+      placeholder: "cth: 9:16",
     },
     negative_video: {
       id: "negative", label: "Hal yang harus dihindari", weight: 1,
@@ -661,18 +661,19 @@ window.PI_PLATFORMS = (() => {
     veo: {
       id: "veo",
       name: "Veo / Google Flow",
-      short: "Video (Veo 3)",
+      short: "Video Flow, 4-15 detik",
       icon: "🎬",
-      desc: "Text-to-video & image-to-video di Google Flow (labs.google/flow), Gemini app, dan Vertex AI. Klip 8 detik dengan audio native.",
+      desc: "Text-to-video & image-to-video di Google Flow (labs.google/flow), Gemini app, dan Vertex AI. Di Flow, model Gemini Omni Flash membuat klip 3-15 detik (akun gratis maks 10 detik, Google AI Plus / Pro / Ultra sampai 15 detik); Veo 3.1 Lite membuat klip 4, 6, atau 8 detik. Audio native.",
       outputLang: "en",
       dims: [D.subject, D.action, D.setting, D.camera, D.time_light, D.style, D.audio, D.mood, D.format_video, D.negative_video],
       settings: {
         aspect: ["16:9", "9:16"],
-        duration: ["8s"],
+        duration: ["4s", "6s", "8s", "10s", "12s", "15s"],
         extra: ["Text-to-Video", "Image-to-Video (Frames)", "Ingredients-to-Video"],
       },
       guide: [
-        "Satu klip = satu aksi utama yang jelas; jangan menumpuk 3 kejadian dalam 8 detik.",
+        "Klip sampai 8 detik = satu aksi utama yang jelas. Klip 10-15 detik = 2-3 tahap berurutan dengan penanda waktu ([0-5s] ... [5-10s] ...), jangan lebih.",
+        "Durasi di Flow: model Gemini Omni Flash 1.2 (default) membuat klip 3-15 detik; akun gratis maksimal 10 detik, Google AI Plus / Pro / Ultra sampai 15 detik. Veo 3.1 Lite: 4, 6, atau 8 detik. Pilih model dan durasi yang sama di Flow.",
         "Urutan yang terbukti: [shot & gerakan kamera] + [subjek sangat spesifik] + [aksi] + [latar & waktu] + [pencahayaan] + [gaya] + [audio].",
         "Tulis dialog dalam tanda kutip dan sebutkan siapa yang bicara: The old fisherman says: \"...\" — tanpa tanda kutip model sering menampilkannya sebagai teks di layar.",
         "Deskripsikan audio secara eksplisit: ambience, SFX, musik, atau 'no music'. Veo 3 membuat audio; jika tidak diarahkan hasilnya acak.",
